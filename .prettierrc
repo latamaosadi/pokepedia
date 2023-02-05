@@ -4,5 +4,8 @@
   "semi": false,
   "vueIndentScriptAndStyle": false,
   "trailingComma": "all",
-  "bracketSpacing": true
+  "bracketSpacing": true,
+  "plugins": [
+    "prettier-plugin-tailwindcss"
+  ]
 }

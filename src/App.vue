@@ -1,17 +1,21 @@
 <script setup lang="ts">
-import HelloWorld from './components/HelloWorld.vue'
+import { onBeforeMount } from 'vue'
+import * as Pokedex from './components/Pokedex'
+import { useBaseStore } from './store/base'
+
+const baseStore = useBaseStore()
+
+onBeforeMount(async () => {
+  await Promise.all([baseStore.getTypeList(), baseStore.getColorList()])
+})
 </script>
 
 <template>
-  <div>
-    <a href="https://vitejs.dev" target="_blank">
-      <img src="/vite.svg" class="logo" alt="Vite logo" />
-    </a>
-    <a href="https://vuejs.org/" target="_blank">
-      <img src="./assets/vue.svg" class="logo vue" alt="Vue logo" />
-    </a>
+  <div class="overflow-x-hidden bg-slate-100">
+    <div class="mx-auto min-h-screen max-w-lg p-2 antialiased">
+      <Pokedex.List />
+    </div>
   </div>
-  <HelloWorld msg="Vite + Vue" />
 </template>
 
 <style scoped>
