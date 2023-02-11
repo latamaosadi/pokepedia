@@ -1,21 +1,29 @@
 import { defineStore } from 'pinia'
-import getPokemonList from '@/api/list'
-import { IPokemonList } from '@/types/pokemon'
+import { getPokemonInfo, getPokemonList } from '@/api/pokemon'
+import { IPokemonInfo, IPokemonList } from '@/types/pokemon'
 import { useBaseStore } from './base'
 
+interface IPokemonState {
+  list: IPokemonList
+  info: IPokemonInfo | null
+}
+
 export const usePokemonStore = defineStore('pokemon', {
-  state: (): IPokemonList => {
+  state: (): IPokemonState => {
     return {
-      page: 1,
-      pageSize: 1008,
-      data: [],
-      loading: false,
+      list: {
+        page: 1,
+        pageSize: 1008,
+        data: [],
+        loading: false,
+      },
+      info: null,
     }
   },
   actions: {
     async getList() {
-      this.loading = true
-      const data = await getPokemonList(this.page, this.pageSize)
+      this.list.loading = true
+      const data = await getPokemonList(this.list.page, this.list.pageSize)
 
       const baseStore = useBaseStore()
 
@@ -30,11 +38,18 @@ export const usePokemonStore = defineStore('pokemon', {
         data[index].color = color
       })
 
-      this.data.push(...data)
-      this.loading = false
+      this.list.data.push(...data)
+      this.list.loading = false
+    },
+    async getInfo(id: number) {
+      const data = await getPokemonInfo(id)
+      this.info = data
+    },
+    clearInfo() {
+      this.info = null
     },
     loadMore() {
-      this.page += 1
+      this.list.page += 1
       this.getList()
     },
   },

@@ -44,6 +44,28 @@ module.exports = {
         '3d': '1px 1px 2px 0px rgba(255, 255, 255, 0.5) inset, -1px -1px 2px 0px rgba(55, 55, 55, 0.3) inset',
         solid: '6px 8px 0px 0px rgba(0,0,0,0.2);',
       },
+      animation: {
+        wiggle: 'wiggle 1s linear infinite',
+      },
+      keyframes: {
+        wiggle: {
+          '0%, 100%': { transform: 'translate3d(-1px, 0, 0)' },
+          '20%, 80%': { transform: 'translate3d(2px, 0, 0)' },
+          '30%, 50%, 70%': {
+            transform: 'rotate(-2deg); translate3d(-4px, 0, 0)',
+          },
+          '40%, 60%': { transform: 'translate3d(4px, 0, 0)' },
+        },
+      },
+      dropShadow: {
+        solid: '1px 1px 0 rgba(0, 0, 0, 0.4)',
+        'solid-md': '2px 4px 0 rgba(0, 0, 0, 0.4)',
+        'solid-lg': '6px 8px 0 rgba(0, 0, 0, 0.4)',
+      },
+      backgroundImage: {
+        scanlines:
+          'linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06))',
+      },
     },
   },
   safelist: [

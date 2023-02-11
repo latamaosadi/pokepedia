@@ -3,13 +3,27 @@
 @tailwind utilities;
 
 @layer utilities {
+  .pattern {
+    background-image: linear-gradient(135deg, #aaa 25%, transparent 25%),
+      linear-gradient(225deg, #aaa 25%, transparent 25%),
+      linear-gradient(45deg, #aaa 25%, transparent 25%),
+      linear-gradient(315deg, #aaa 25%, #333 25%);
+    background-position: 10px 0, 10px 0, 0 0, 0 0;
+    background-size: 10px 10px;
+    background-repeat: repeat;
+  }
+  .pattern-carbon {
+    background:
+    radial-gradient(black 15%, transparent 16%) 0 0,
+    radial-gradient(black 15%, transparent 16%) 8px 8px,
+    radial-gradient(rgba(255,255,255,.1) 15%, transparent 20%) 0 1px,
+    radial-gradient(rgba(255,255,255,.1) 15%, transparent 20%) 8px 9px;
+    background-color:#282828;
+    background-size:16px 16px;
+  }
   .pixelated {
     image-rendering: pixelated;
     image-rendering: -moz-crisp-edges;
     image-rendering: crisp-edges;
-  }
-
-  .text-shadow {
-    text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.4);
   }
 }
