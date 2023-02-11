@@ -1,3 +1,5 @@
+import { RemovableRef } from '@vueuse/core'
+
 export enum PokemonTypeEnum {
   Normal = 'normal',
   Fighting = 'fighting',
@@ -46,6 +48,45 @@ export enum DamageClassEnum {
 }
 export type DamageClass = `${DamageClassEnum}`
 
+export enum RegionEnum {
+  All = 'all',
+  Kanto = 'kanto',
+  Johto = 'johto',
+  Hoenn = 'hoenn',
+  Sinnoh = 'sinnoh',
+  Unova = 'unova',
+  Kalos = 'kalos',
+  Alola = 'alola',
+  Galar = 'galar',
+  Paldea = 'paldea',
+}
+
+export interface INamedResource {
+  name: string
+  url?: string
+}
+
+export interface IItem {
+  id: string
+  name: string
+  description: string
+  type: string
+  sprite?: string
+}
+
+export interface IPokemonSpecies {
+  isBaby: boolean
+  isLegendary: boolean
+  isMythical: boolean
+  name: string
+  pokedexNumber: number
+  genus: string
+  color: string
+  description: string
+  evolutionUrl: string
+  id: number
+}
+
 export interface IType {
   name: PokemonType
   id?: number
@@ -66,12 +107,19 @@ export interface IPokemon {
   name: string
   number: number
   sprite: string
+  art?: string
   color?: string
   types?: IType[]
 }
 
 export interface IEvolutionDetail {
   method: EvolutionMethod
+  minHappiness?: number
+  minLevel?: number
+  heldItem?: string
+  item?: IItem | null
+  location?: string
+  timeOfDay?: string
 }
 
 export interface IEvolutionChain extends IPokemon {
@@ -83,7 +131,11 @@ export interface IPokemonInfo extends IPokemon {
   animatedSprite: string | null
   artwork: string
   moves: IMove[]
-  evolutionChain: IEvolutionChain[]
+  evolutionChain: IEvolutionChain
+  genus: string
+  description: string
+  height?: string
+  weight?: string
 }
 
 export interface IPokemonList {
@@ -94,6 +146,6 @@ export interface IPokemonList {
 }
 
 export interface IBaseList {
-  types: IType[]
-  colors: IType[]
+  types: IType[] | RemovableRef<[]>
+  colors: IType[] | RemovableRef<[]>
 }

@@ -11,5 +11,11 @@ const icon = defineAsyncComponent(
 </script>
 
 <template>
-  <component :is="icon" class="fill-current" />
+  <component :is="icon" class="icon" />
 </template>
+
+<style>
+.icon {
+  @apply w-5 fill-current;
+}
+</style>
