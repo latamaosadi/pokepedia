@@ -6,7 +6,6 @@ import { useScroll } from '@vueuse/core'
 
 const pokemonStore = usePokemonStore()
 const keyword = ref('')
-const container = ref<HTMLElement | null>(null)
 const cardMode = ref(true)
 
 const list = computed(() => {
@@ -19,7 +18,7 @@ const list = computed(() => {
 
 const isLoading = computed(() => pokemonStore.list.loading)
 
-const { y, isScrolling, arrivedState, directions } = useScroll(container, {
+const { y, isScrolling, arrivedState, directions } = useScroll(window, {
   idle: 5000,
 })
 
@@ -45,7 +44,7 @@ onBeforeMount(async () => {
 </script>
 
 <template>
-  <div ref="container" class="relative h-screen overflow-y-scroll px-2">
+  <div class="px-2">
     <div class="sticky inset-x-0 top-0 z-10 p-2">
       <div
         class="relative transition-all duration-200"
@@ -68,7 +67,7 @@ onBeforeMount(async () => {
         </div>
         <input
           type="text"
-          class="pixelated w-full rounded-md bg-white py-2 pl-10 pr-4 font-pixel text-slate-600 shadow-solid shadow-slate-600/40 ring ring-slate-600 focus:outline-none"
+          class="pixelated w-full appearance-none rounded-md bg-white py-2 pl-10 pr-4 font-pixel text-slate-600 shadow-solid shadow-slate-600/40 ring ring-slate-600 focus:outline-none"
           placeholder="Search your Pokemon"
           @input="(event) => searchPokemon(event)"
         />

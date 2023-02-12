@@ -25,7 +25,7 @@ const computedPageProvider = computed(() => {
     :length="list.length"
     :page-size="30"
     :page-provider="computedPageProvider"
-    class="grid grid-cols-2 gap-2 sm:grid-cols-3"
+    class="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4"
   >
     <template #probe>
       <CardItem />

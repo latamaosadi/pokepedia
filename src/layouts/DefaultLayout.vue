@@ -10,8 +10,8 @@ onBeforeMount(async () => {
 </script>
 
 <template>
-  <div class="overflow-x-hidden bg-slate-200">
-    <div class="mx-auto min-h-screen max-w-xl antialiased">
+  <div class="bg-slate-200">
+    <div class="relative mx-auto min-h-screen max-w-3xl antialiased">
       <router-view />
     </div>
   </div>
