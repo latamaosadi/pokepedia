@@ -27,9 +27,7 @@ export function getDescription(
   }[],
 ) {
   return (
-    textEntries.find(
-      (entry) => getEnglish(entry.language) && entry.version.name === 'emerald',
-    )?.flavor_text || ''
+    textEntries.find((entry) => getEnglish(entry.language))?.flavor_text || ''
   )
 }
 

@@ -112,8 +112,8 @@ export const getPokemonInfo = async (id: number) => {
     moves: [],
     genus: speciesData.genus,
     description: speciesData.description,
-    height: convert(infoData.height, 'decimeters').to('best').toString(),
-    weight: convert(infoData.weight, 'hectograms').to('best').toString(),
+    height: convert(infoData.height, 'decimeters').to('best').toString(2),
+    weight: convert(infoData.weight, 'hectograms').to('best').toString(2),
   }
   return pokemon
 }
