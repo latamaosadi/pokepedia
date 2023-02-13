@@ -26,16 +26,24 @@ const hasAnotherEvolution = computed(() => props.evolution?.evolvesTo.length)
           </div>
         </div>
       </div>
-      <div class="w-24 shrink-0 rounded-full">
-        <img
-          :key="evolution?.number"
-          v-lazy="evolution?.sprite"
-          height="160"
-          width="160"
-          class="pixelated relative w-full object-contain drop-shadow-solid-md duration-300 group-hover:animate-wiggle"
-        />
-        <p class="text-center font-pixel text-sm">{{ evolution?.name }}</p>
-      </div>
+      <RouterLink
+        :to="{ name: 'dex.detail', params: { id: evolution?.number || 0 } }"
+      >
+        <div class="rounded-md duration-150 hover:bg-white/20">
+          <div class="w-24 shrink-0">
+            <img
+              :key="evolution?.number"
+              v-lazy="evolution?.sprite"
+              height="160"
+              width="160"
+              class="pixelated relative w-full object-contain drop-shadow-solid-md duration-300 group-hover:animate-wiggle"
+            />
+          </div>
+          <p class="text-center font-pixel text-sm">
+            {{ evolution?.formattedName }}
+          </p>
+        </div>
+      </RouterLink>
     </div>
     <template v-if="hasAnotherEvolution">
       <div class="flex items-center">

@@ -26,7 +26,11 @@ export function formatFormName(name: string, speciesName: string) {
     return manualNameFormat[name]
   }
 
-  if (name.indexOf('-mega') !== -1 || name.indexOf('-primal') !== -1 || name === 'greninja-ash') {
+  if (
+    name.indexOf('-mega') !== -1 ||
+    name.indexOf('-primal') !== -1 ||
+    name === 'greninja-ash'
+  ) {
     const re = '(' + speciesName + ')[-]([a-z]*)'
     const regExp = new RegExp(re, 'g')
     name = name.replace(regExp, '$2-$1')

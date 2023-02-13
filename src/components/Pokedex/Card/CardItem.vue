@@ -38,22 +38,16 @@ defineProps<{
             />
           </div>
         </div>
-        <div class="-mt-2 box-content h-14 py-2">
-          <ul class="flex justify-center gap-0.5">
-            <TypeBadge
-              v-for="(type, index) in pokemon?.types"
-              :key="index"
-              :type="type"
-            />
-          </ul>
+        <div class="-mt-2 box-content h-14 py-2 text-center">
+          <TypeBadge :types="pokemon?.types || []" class="justify-center" />
           <div
             class="mt-2 flex items-center justify-between rounded bg-black/30 px-2 text-center font-pixel text-white sm:text-lg"
           >
             <span
-              ><span class="text-sm">No.</span
+              ><span class="text-sm">No</span
               >{{ padNumber(pokemon?.number || 0) }}</span
             >
-            <span>{{ pokemon?.name || '' }}</span>
+            <span>{{ pokemon?.formattedName || '' }}</span>
           </div>
         </div>
       </div>
