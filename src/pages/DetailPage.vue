@@ -6,21 +6,34 @@ import TypeBadge from '@/components/Pokedex/TypeBadge.vue'
 import EvolutionChain from '@/components/Pokemon/EvolutionChain.vue'
 import { padNumber } from '@/utils/string'
 import { onClickOutside } from '@vueuse/core'
+import DropDown from '@/components/DropDown.vue'
 
 const pokemonStore = usePokemonStore()
 const route = useRoute()
 const router = useRouter()
 const container = ref(null)
+const form = ref(0)
 
 const pokemon = computed(() => pokemonStore.info)
+const info = computed(() =>
+  pokemon.value?.forms.find((pokemonForm) => pokemonForm.id === form.value),
+)
+const pokemonForms = computed(() => {
+  return (pokemon.value?.forms || []).map((form) => ({
+    label: form.name,
+    value: form.id,
+    image: form.artwork,
+  }))
+})
 
 onMounted(async () => {
   document.body.classList.add('overflow-y-hidden')
   await pokemonStore.getInfo(parseInt(route.params.id as string))
+  form.value = pokemon.value?.number || 0
 })
 
 onClickOutside(container, () => {
-  router.replace({ name: 'dex' })
+  router.push({ name: 'dex' })
 })
 
 onBeforeUnmount(() => {
@@ -60,7 +73,7 @@ onBeforeUnmount(() => {
                     >
                       <img
                         :key="pokemon.number"
-                        v-lazy="pokemon.artwork"
+                        v-lazy="info?.artwork"
                         height="160"
                         width="160"
                         class="relative h-full w-full object-contain object-center"
@@ -68,28 +81,34 @@ onBeforeUnmount(() => {
                     </div>
                   </div>
                 </div>
-                <div
-                  class="relative md:bg-slate-200 md:text-center md:shadow-solid-sm"
-                >
-                  <h1 class="font-pixel text-lg">
-                    <span class="text-sm">No.</span
-                    >{{ padNumber(pokemon?.number || 0) }}
-                    <span class="uppercase">{{ pokemon.name }}</span>
-                  </h1>
-                  <p class="font-pixel">{{ pokemon.genus }}</p>
-                  <ul class="mt-1 flex gap-0.5 md:justify-center">
+                <div class="flex flex-1 flex-col">
+                  <div
+                    class="relative md:mt-4 md:bg-slate-200 md:text-center md:shadow-solid-sm"
+                  >
+                    <h1 class="font-pixel text-lg">
+                      <span class="text-sm">No</span
+                      >{{ padNumber(pokemon?.number || 0) }}
+                      <span class="uppercase">{{ info?.name }}</span>
+                    </h1>
+                    <p class="font-pixel">{{ pokemon.genus }}</p>
                     <TypeBadge
-                      v-for="(type, index) in pokemon.types"
-                      :key="index"
-                      :type="type"
+                      class="mt-1 md:justify-center"
+                      :types="info?.types || []"
                     />
-                  </ul>
-                  <div class="mt-1">
-                    <ol class="font-pixel text-sm">
-                      <li>Height: {{ pokemon.height }}</li>
-                      <li>Weight: {{ pokemon.weight }}</li>
-                    </ol>
+                    <div class="mt-1">
+                      <ol class="font-pixel text-sm">
+                        <li>Height: {{ info?.height }}</li>
+                        <li>Weight: {{ info?.weight }}</li>
+                      </ol>
+                    </div>
                   </div>
+                  <DropDown
+                    v-if="pokemonForms.length > 1"
+                    v-model="form"
+                    :options="pokemonForms"
+                    :color="pokemon.color"
+                    class="mt-2 md:order-first"
+                  />
                 </div>
               </div>
               <div
@@ -97,10 +116,10 @@ onBeforeUnmount(() => {
                 :class="`bg-poke-${pokemon.color}/30`"
               >
                 <div
-                  class="relative rounded-md border-2 border-dashed p-2 font-pixel"
+                  class="rounded-md border-2 border-dashed p-2 font-pixel md:text-lg"
                   :class="`border-poke-${pokemon.color}/70 bg-poke-${pokemon.color}/20`"
                 >
-                  {{ pokemon.description }}
+                  {{ pokemon.description || 'No info yet' }}
                 </div>
                 <EvolutionChain
                   class="mt-2"

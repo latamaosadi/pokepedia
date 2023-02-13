@@ -10,7 +10,7 @@ const cardMode = ref(true)
 
 const list = computed(() => {
   return pokemonStore.list.data.filter((pokemon) =>
-    pokemon.name
+    pokemon.formattedName
       .toLocaleLowerCase()
       .includes(keyword.value.toLocaleLowerCase()),
   )
@@ -86,8 +86,8 @@ onBeforeMount(async () => {
         :class="['filter-btn', { active: !cardMode }]"
         @click.prevent="toggleCardMode(false)"
       >
-        <TheIcon name="bulletlist" />
-        <span>List</span>
+        <TheIcon name="group" />
+        <span>Grid</span>
       </button>
     </div>
 

@@ -66,6 +66,23 @@ export interface INamedResource {
   url?: string
 }
 
+export interface IType {
+  name: PokemonType
+  id?: number
+  pokemon?: []
+}
+
+export interface IForm {
+  id: number
+  name: string
+  value: string
+  sprite?: string
+  artwork?: string
+  height?: string
+  weight?: string
+  types?: IType[]
+}
+
 export interface IItem {
   id: string
   name: string
@@ -75,22 +92,18 @@ export interface IItem {
 }
 
 export interface IPokemonSpecies {
+  id: number
+  name: string
+  formattedName: string
+  pokedexNumber: number
   isBaby: boolean
   isLegendary: boolean
   isMythical: boolean
-  name: string
-  pokedexNumber: number
   genus: string
   color: string
   description: string
   evolutionUrl: string
-  id: number
-}
-
-export interface IType {
-  name: PokemonType
-  id?: number
-  pokemon?: []
+  varietiesUrl: string[]
 }
 
 export interface IMove {
@@ -101,15 +114,6 @@ export interface IMove {
   power: number
   type: IType
   damageClass: DamageClass
-}
-
-export interface IPokemon {
-  name: string
-  number: number
-  sprite: string
-  art?: string
-  color?: string
-  types?: IType[]
 }
 
 export interface IEvolutionDetail {
@@ -127,15 +131,25 @@ export interface IEvolutionChain extends IPokemon {
   evolvesTo: IEvolutionChain[]
 }
 
+export interface IPokemon {
+  name: string
+  formattedName: string
+  number: number
+  sprite: string
+  artwork?: string
+  color?: string
+  types?: IType[]
+}
+
 export interface IPokemonInfo extends IPokemon {
   animatedSprite: string | null
-  artwork: string
   moves: IMove[]
   evolutionChain: IEvolutionChain
   genus: string
   description: string
   height?: string
   weight?: string
+  forms: IForm[]
 }
 
 export interface IPokemonList {

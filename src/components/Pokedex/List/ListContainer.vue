@@ -23,9 +23,9 @@ const computedPageProvider = computed(() => {
   <Grid
     v-if="list.length > 0"
     :length="list.length"
-    :page-size="30"
+    :page-size="50"
     :page-provider="computedPageProvider"
-    class="grid grid-cols-2 gap-2 sm:grid-cols-2 sm:gap-y-4"
+    class="grid grid-cols-4 gap-2 md:grid-cols-6"
   >
     <template #probe>
       <ListItem />
