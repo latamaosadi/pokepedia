@@ -2,7 +2,7 @@ import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import eslintPlugin from 'vite-plugin-eslint'
 import svgLoader from 'vite-svg-loader'
-import type { ManifestOptions, VitePWAOptions } from 'vite-plugin-pwa'
+import type { VitePWAOptions } from 'vite-plugin-pwa'
 import { VitePWA } from 'vite-plugin-pwa'
 import * as path from 'path'
 
@@ -16,6 +16,7 @@ const pwaOptions: Partial<VitePWAOptions> = {
     description: 'A complete classic-themed pokedex app that works offline',
     start_url: '/',
     theme_color: '#DE3C47',
+    background_color: '#DE3C47',
     icons: [
       {
         src: 'pwa-192x192.png',
@@ -51,28 +52,6 @@ const pwaOptions: Partial<VitePWAOptions> = {
     navigateFallback: 'index.html',
   },
 }
-const replaceOptions = { __DATE__: new Date().toISOString() }
-const claims = process.env.CLAIMS === 'true'
-const reload = process.env.RELOAD_SW === 'true'
-const selfDestroying = process.env.SW_DESTROY === 'true'
-
-if (process.env.SW === 'true') {
-  pwaOptions.srcDir = 'src'
-  pwaOptions.filename = claims ? 'claims-sw.ts' : 'prompt-sw.ts'
-  pwaOptions.strategies = 'injectManifest'
-  ;(pwaOptions.manifest as Partial<ManifestOptions>).name =
-    'PWA Inject Manifest'
-  ;(pwaOptions.manifest as Partial<ManifestOptions>).short_name = 'PWA Inject'
-}
-
-if (claims) pwaOptions.registerType = 'autoUpdate'
-
-if (reload) {
-  // @ts-expect-error overrides
-  replaceOptions.__RELOAD_SW__ = 'true'
-}
-
-if (selfDestroying) pwaOptions.selfDestroying = selfDestroying
 
 // https://vitejs.dev/config/
 export default defineConfig({

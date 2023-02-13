@@ -65,12 +65,17 @@ onBeforeMount(async () => {
             <TheIcon name="search" class="" />
           </div>
         </div>
-        <input
-          type="text"
-          class="pixelated w-full appearance-none rounded-md bg-white py-2 pl-10 pr-4 font-pixel text-slate-600 shadow-solid shadow-slate-600/40 ring ring-slate-600 focus:outline-none"
-          placeholder="Search your Pokemon"
-          @input="(event) => searchPokemon(event)"
-        />
+        <div class="flex gap-4">
+          <input
+            type="text"
+            class="pixelated w-full appearance-none rounded-sm bg-white py-2 pl-10 pr-4 font-pixel text-slate-600 shadow-solid-sm shadow-slate-600/40 ring-1 ring-slate-600 focus:outline-none"
+            placeholder="Search your Pokemon"
+            @input="(event) => searchPokemon(event)"
+          />
+          <button class="bg-white px-2">
+            <TheIcon class="h-4" name="sliders" />
+          </button>
+        </div>
       </div>
     </div>
 
@@ -103,12 +108,12 @@ onBeforeMount(async () => {
 
 <style scoped>
 .filter-btn {
-  @apply flex items-center gap-2 rounded-md bg-blue-400 py-1 px-3 text-center font-pixel text-white shadow-3d;
+  @apply flex items-center gap-2 rounded-md py-1 px-3 text-center font-pixel;
 }
 .filter-btn span {
   @apply drop-shadow-solid;
 }
 .filter-btn.active {
-  @apply bg-blue-600;
+  @apply font-bold;
 }
 </style>
