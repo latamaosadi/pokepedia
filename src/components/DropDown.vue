@@ -32,16 +32,16 @@ const selectedLabel = computed(
     :model-value="modelValue"
     by="value"
     as="div"
-    @update:modelValue="(value) => emit('update:modelValue', value.value)"
+    @update:model-value="(value) => emit('update:modelValue', value.value)"
   >
     <ListboxLabel v-if="label">{{ label }}:</ListboxLabel>
     <div class="relative rounded-sm bg-white ring-1 ring-black ring-opacity-20">
       <ListboxButton
-        class="relative flex w-full cursor-default items-center justify-between rounded-sm px-2 text-left font-pixel focus:outline-none sm:text-sm md:py-1"
+        class="relative flex w-full cursor-default items-center justify-between rounded-sm px-2 text-left font-pixel shadow-inner focus:outline-none sm:text-sm md:py-1"
         :class="`bg-poke-${color}/50`"
       >
         <span class="block truncate">{{ selectedLabel }}</span>
-        <TheIcon class="h-4" name="chevron-down" />
+        <TheIcon class="h-4 w-4" name="chevron-down" />
       </ListboxButton>
       <transition
         leave-active-class="transition duration-100 ease-in"

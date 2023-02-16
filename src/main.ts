@@ -1,6 +1,7 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import App from './App.vue'
+import 'vue-virtual-scroller/dist/vue-virtual-scroller.css'
 import './style.css'
 import VueLazyload from 'vue-lazyload'
 import placeholder from './assets/images/placeholder.png'

@@ -1,9 +1,17 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: ['./index.html', './src/**/*.{vue,js,ts,jsx,tsx}'],
+  important: true,
   theme: {
     extend: {
       colors: {
+        retro: {
+          brown: '#948c3c',
+          green: '#9fbd8d',
+          black: '#272526',
+          red: '#9d5c71',
+          'red-darker': '#7b4957',
+        },
         type: {
           normal: '#A8A878',
           fighting: '#C03028',
@@ -54,9 +62,9 @@ module.exports = {
           '0%, 100%': { transform: 'translate3d(-1px, 0, 0)' },
           '20%, 80%': { transform: 'translate3d(2px, 0, 0)' },
           '30%, 50%, 70%': {
-            transform: 'rotate(-2deg); translate3d(-4px, 0, 0)',
+            transform: 'rotate(-2deg) translate3d(-4px, 0, 0)',
           },
-          '40%, 60%': { transform: 'translate3d(4px, 0, 0)' },
+          '40%, 60%': { transform: 'translate3d(2px, 0, 0)' },
         },
       },
       dropShadow: {

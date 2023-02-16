@@ -13,7 +13,7 @@ const hasAnotherEvolution = computed(() => props.evolution?.evolvesTo.length)
   <div class="flex items-center justify-center gap-2">
     <div class="flex items-center gap-1">
       <div v-if="evolution?.evolutionDetail.method" class="relative">
-        <TheIcon class="mx-auto h-4" name="arrow-right" />
+        <TheIcon class="mx-auto h-4 w-4" name="arrow-right" />
         <div class="hidden">
           <p class="text-center font-pixel">
             {{ evolution?.evolutionDetail.method }}
