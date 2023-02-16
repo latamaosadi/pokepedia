@@ -27,7 +27,9 @@ export function useGridItems(gridSizes: Record<string, number>) {
       columns = gridSizes['2xl']
     }
 
-    if (!columns) columns = gridSizes[Object.keys(gridSizes)[Object.keys(gridSizes).length - 1]]
+    if (!columns)
+      columns =
+        gridSizes[Object.keys(gridSizes)[Object.keys(gridSizes).length - 1]]
 
     return pokemonStore.list.reduce((acc, pokemon, index) => {
       if ((index + 1) % columns < columns) {

@@ -4,6 +4,9 @@ import { IPokemonInfo, IPokemonList } from '@/types/pokemon'
 import { useBaseStore } from './base'
 
 interface IPokemonState {
+  filter: {
+    keyword: string
+  }
   list: IPokemonList
   info: IPokemonInfo | null
 }
@@ -11,6 +14,9 @@ interface IPokemonState {
 export const usePokemonStore = defineStore('pokemon', {
   state: (): IPokemonState => {
     return {
+      filter: {
+        keyword: '',
+      },
       list: {
         page: 1,
         pageSize: 1008,
@@ -19,6 +25,17 @@ export const usePokemonStore = defineStore('pokemon', {
       },
       info: null,
     }
+  },
+  getters: {
+    filteredList: (state) => {
+      const data = state.list.data.filter((pokemon) =>
+        pokemon.formattedName
+          .toLocaleLowerCase()
+          .includes(state.filter.keyword.toLocaleLowerCase()),
+      )
+
+      return data
+    },
   },
   actions: {
     async getList() {
@@ -47,6 +64,9 @@ export const usePokemonStore = defineStore('pokemon', {
     },
     clearInfo() {
       this.info = null
+    },
+    setKeyword(keyword: string) {
+      this.filter.keyword = keyword
     },
     loadMore() {
       this.list.page += 1
