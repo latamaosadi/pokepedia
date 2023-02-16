@@ -7,6 +7,7 @@ import EvolutionChain from '@/components/Pokemon/EvolutionChain.vue'
 import { padNumber } from '@/utils/string'
 import { onClickOutside } from '@vueuse/core'
 import DropDown from '@/components/DropDown.vue'
+import { pokemonColors } from '@/utils/colors'
 
 const pokemonStore = usePokemonStore()
 const route = useRoute()
@@ -30,6 +31,10 @@ onMounted(async () => {
   document.body.classList.add('overflow-y-hidden')
   await pokemonStore.getInfo(parseInt(route.params.id as string))
   form.value = pokemon.value?.number || 0
+  const themeMeta = document.querySelector('meta[name="theme-color"]')
+  if (themeMeta) {
+    themeMeta.setAttribute('content', pokemonColors[pokemon.value?.color || ''])
+  }
 })
 
 onClickOutside(container, () => {

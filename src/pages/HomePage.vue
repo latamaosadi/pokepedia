@@ -1,20 +1,12 @@
 <script setup lang="ts">
-import { computed, ref, onBeforeMount, defineAsyncComponent } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { usePokemonStore } from '@/store/pokemon'
 import TheIcon from '@/components/TheIcon.vue'
 import { useScroll } from '@vueuse/core'
+import { CardContainer, ListContainer } from '@/components/Pokedex'
 
 const pokemonStore = usePokemonStore()
-const keyword = ref('')
 const cardMode = ref(true)
-
-const list = computed(() => {
-  return pokemonStore.list.data.filter((pokemon) =>
-    pokemon.formattedName
-      .toLocaleLowerCase()
-      .includes(keyword.value.toLocaleLowerCase()),
-  )
-})
 
 const isLoading = computed(() => pokemonStore.list.loading)
 
@@ -22,23 +14,15 @@ const { y, isScrolling, arrivedState, directions } = useScroll(window, {
   idle: 5000,
 })
 
-const listComponent = computed(() => {
-  const isCardMode = cardMode.value
-  return defineAsyncComponent(() => {
-    return isCardMode
-      ? import('@/components/Pokedex/Card/CardContainer.vue')
-      : import('@/components/Pokedex/List/ListContainer.vue')
-  })
-})
-
 function searchPokemon(event: Event) {
-  keyword.value = (event.target as HTMLInputElement).value
+  pokemonStore.setKeyword((event.target as HTMLInputElement).value)
 }
+
 function toggleCardMode(state: boolean) {
   cardMode.value = state
 }
 
-onBeforeMount(async () => {
+onMounted(async () => {
   await pokemonStore.getList()
 })
 </script>
@@ -72,14 +56,11 @@ onBeforeMount(async () => {
             placeholder="Search your Pokemon"
             @input="(event) => searchPokemon(event)"
           />
-          <button class="bg-white px-2">
-            <TheIcon class="h-4" name="sliders" />
-          </button>
         </div>
       </div>
     </div>
 
-    <div class="mt-8 flex justify-center gap-2">
+    <div class="mt-8 flex items-center justify-end gap-2">
       <button
         :class="['filter-btn', { active: cardMode }]"
         @click.prevent="toggleCardMode(true)"
@@ -96,7 +77,9 @@ onBeforeMount(async () => {
       </button>
     </div>
 
-    <component :is="listComponent" :list="list" class="mt-4" />
+    <div class="relative mt-4">
+      <component :is="cardMode ? CardContainer : ListContainer" />
+    </div>
 
     <div v-if="isLoading" class="absolute inset-x-0 bottom-0">
       <div class="bg-white py-4 text-center">Loading</div>
@@ -108,12 +91,12 @@ onBeforeMount(async () => {
 
 <style scoped>
 .filter-btn {
-  @apply flex items-center gap-2 rounded-md py-1 px-3 text-center font-pixel;
+  @apply flex items-center gap-2 rounded-sm border border-slate-400 bg-slate-200 py-1 px-3 text-center font-pixel text-slate-700 shadow-3d hover:shadow-inner;
 }
 .filter-btn span {
-  @apply drop-shadow-solid;
+  @apply uppercase tracking-wider drop-shadow-solid;
 }
 .filter-btn.active {
-  @apply font-bold;
+  @apply bg-slate-300 font-bold shadow-inner;
 }
 </style>

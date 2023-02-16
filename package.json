@@ -20,7 +20,7 @@
     "vue": "^3.2.45",
     "vue-lazyload": "^3.0.0-rc.2",
     "vue-router": "4",
-    "vue-virtual-scroll-grid": "^1.10.1"
+    "vue-virtual-scroller": "^2.0.0-beta.8"
   },
   "devDependencies": {
     "@types/node": "^18.11.18",

@@ -11,8 +11,8 @@ const pwaOptions: Partial<VitePWAOptions> = {
   base: '/',
   includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
   manifest: {
-    name: 'Pokepedia - Classic Pokedex App',
-    short_name: 'Pokepedia',
+    name: 'Poképedia - Classic Pokedex App',
+    short_name: 'Poképedia',
     description: 'A complete classic-themed pokedex app that works offline',
     start_url: '/',
     theme_color: '#DE3C47',

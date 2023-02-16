@@ -1,44 +1,46 @@
 <script setup lang="ts">
 import { CardItem } from '..'
-import Grid from 'vue-virtual-scroll-grid'
-import { computed } from 'vue'
+import { ref } from 'vue'
+import { useElementSize } from '@vueuse/core'
+import { RecycleScroller } from 'vue-virtual-scroller'
+import 'vue-virtual-scroller/dist/vue-virtual-scroller.css'
+import { useGridItems } from '@/composables/grid-items'
 
-const props = defineProps<{
-  list: []
-}>()
-
-const computedPageProvider = computed(() => {
-  const filteredList = props.list
-  return async function pageProvider(pageNumber: number, pageSize: number) {
-    const pageData = filteredList.slice(
-      pageNumber * pageSize,
-      (pageNumber + 1) * pageSize,
-    )
-    return pageData
-  }
-})
+const gridSizes = {
+  default: 2,
+  sm: 3,
+  md: 4,
+}
+const placeholder = ref<HTMLElement | null>(null)
+const { height: itemHeight } = useElementSize(placeholder)
+const gridItems = useGridItems(gridSizes)
 </script>
 
 <template>
-  <Grid
-    v-if="list.length > 0"
-    :length="list.length"
-    :page-size="30"
-    :page-provider="computedPageProvider"
-    class="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4"
-  >
-    <template #probe>
-      <CardItem />
-    </template>
-
-    <template #placeholder="{ style }">
-      <CardItem :style="style" />
-    </template>
-
-    <template #default="{ item, style }">
-      <CardItem :pokemon="item" :style="style" />
-    </template>
-  </Grid>
+  <div>
+    <div class="invisible absolute inset-x-0 top-0 -z-10">
+      <div class="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
+        <CardItem ref="placeholder" />
+      </div>
+    </div>
+    <RecycleScroller
+      class="scroller"
+      :items="gridItems"
+      :item-size="itemHeight + 8"
+      :emit-update="true"
+      page-mode
+    >
+      <template #default="{ item: row }">
+        <div class="grid grid-cols-2 gap-2 py-1 sm:grid-cols-3 md:grid-cols-4">
+          <CardItem
+            v-for="pokemon in row.items"
+            :key="pokemon.number"
+            :pokemon="pokemon"
+          />
+        </div>
+      </template>
+    </RecycleScroller>
+  </div>
 </template>
 
 <style scoped>

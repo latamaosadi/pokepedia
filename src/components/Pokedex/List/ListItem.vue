@@ -11,7 +11,10 @@ defineProps<{
     :to="{ name: 'dex.detail', params: { id: pokemon?.number || 0 } }"
   >
     <!-- <div class="pattern absolute inset-0 rounded-xl mix-blend-overlay"></div> -->
-    <div class="group relative overflow-hidden rounded-lg">
+    <div
+      class="group relative overflow-hidden rounded border-4 border-double"
+      :class="`border-poke-${pokemon?.color}`"
+    >
       <div class="absolute inset-0 flex">
         <div class="m-auto h-16 w-16 rounded-full bg-white/60 blur-lg"></div>
       </div>

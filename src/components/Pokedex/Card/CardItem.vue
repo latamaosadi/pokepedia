@@ -40,15 +40,17 @@ defineProps<{
         </div>
         <div class="-mt-2 box-content h-14 py-2 text-center">
           <TypeBadge :types="pokemon?.types || []" class="justify-center" />
-          <div
-            class="mt-2 flex items-center justify-between rounded bg-black/30 px-2 text-center font-pixel text-white sm:text-lg"
+        </div>
+      </div>
+      <div class="absolute inset-x-0 bottom-0">
+        <div
+          class="flex h-10 items-center justify-between rounded bg-black/30 px-2 text-center font-pixel text-white sm:text-lg"
+        >
+          <span
+            ><span class="text-sm">No</span
+            >{{ padNumber(pokemon?.number || 0) }}</span
           >
-            <span
-              ><span class="text-sm">No</span
-              >{{ padNumber(pokemon?.number || 0) }}</span
-            >
-            <span>{{ pokemon?.formattedName || '' }}</span>
-          </div>
+          <span>{{ pokemon?.formattedName || '' }}</span>
         </div>
       </div>
     </div>
