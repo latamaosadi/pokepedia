@@ -1,3 +1,4 @@
+export const appColor = '#DE3C47'
 export const typeColors: Record<string, string> = {
   normal: '#A8A878',
   fighting: '#C03028',

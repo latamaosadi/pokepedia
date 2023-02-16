@@ -7,7 +7,7 @@ import EvolutionChain from '@/components/Pokemon/EvolutionChain.vue'
 import { padNumber } from '@/utils/string'
 import { onClickOutside } from '@vueuse/core'
 import DropDown from '@/components/DropDown.vue'
-import { pokemonColors } from '@/utils/colors'
+import { appColor, pokemonColors } from '@/utils/colors'
 
 const pokemonStore = usePokemonStore()
 const route = useRoute()
@@ -44,6 +44,10 @@ onClickOutside(container, () => {
 onBeforeUnmount(() => {
   pokemonStore.clearInfo()
   document.body.classList.remove('overflow-y-hidden')
+  const themeMeta = document.querySelector('meta[name="theme-color"]')
+  if (themeMeta) {
+    themeMeta.setAttribute('content', appColor)
+  }
 })
 </script>
 
