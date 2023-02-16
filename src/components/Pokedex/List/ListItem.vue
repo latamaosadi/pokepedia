@@ -10,15 +10,17 @@ defineProps<{
   <RouterLink
     :to="{ name: 'dex.detail', params: { id: pokemon?.number || 0 } }"
   >
-    <!-- <div class="pattern absolute inset-0 rounded-xl mix-blend-overlay"></div> -->
     <div
-      class="group relative overflow-hidden rounded border-4 border-double"
+      class="group relative overflow-hidden rounded border-4 border-double bg-slate-100"
       :class="`border-poke-${pokemon?.color}`"
     >
+      <div
+        class="pattern-carbon absolute inset-0 opacity-40 mix-blend-overlay"
+      ></div>
       <div class="absolute inset-0 flex">
-        <div class="m-auto h-16 w-16 rounded-full bg-white/60 blur-lg"></div>
+        <div class="m-auto h-3/4 w-3/4 rounded-full bg-white/40 blur-xl"></div>
       </div>
-      <div class="aspect-square" :class="[`bg-poke-${pokemon?.color}/50`]">
+      <div class="aspect-square" :class="[`bg-poke-${pokemon?.color}/60`]">
         <img
           :key="pokemon?.number"
           v-lazy="pokemon?.sprite"

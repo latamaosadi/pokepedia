@@ -3,13 +3,15 @@ import { ListItem } from '..'
 import { ref } from 'vue'
 import { useElementSize } from '@vueuse/core'
 import { RecycleScroller } from 'vue-virtual-scroller'
-import 'vue-virtual-scroller/dist/vue-virtual-scroller.css'
 import { useGridItems } from '@/composables/grid-items'
 
 const gridSizes = {
-  default: 4,
+  default: 3,
   sm: 4,
   md: 6,
+  lg: 8,
+  xl: 10,
+  '2xl': 12,
 }
 const placeholder = ref<HTMLElement | null>(null)
 const { height: itemHeight } = useElementSize(placeholder)
@@ -19,12 +21,13 @@ const gridItems = useGridItems(gridSizes)
 <template>
   <div>
     <div class="invisible absolute inset-x-0 top-0 -z-10">
-      <div class="grid grid-cols-4 gap-1 md:grid-cols-6">
+      <div
+        class="grid grid-cols-3 gap-1 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 2xl:grid-cols-12"
+      >
         <ListItem ref="placeholder" />
       </div>
     </div>
     <RecycleScroller
-      ref="scroller"
       class="scroller"
       :items="gridItems"
       :item-size="itemHeight + 4"
@@ -32,7 +35,9 @@ const gridItems = useGridItems(gridSizes)
       page-mode
     >
       <template #default="{ item: row }">
-        <div class="grid grid-cols-4 gap-1 md:grid-cols-6">
+        <div
+          class="grid grid-cols-3 gap-1 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 2xl:grid-cols-12"
+        >
           <ListItem
             v-for="pokemon in row.items"
             :key="pokemon.number"

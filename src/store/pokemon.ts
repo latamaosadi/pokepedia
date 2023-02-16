@@ -40,9 +40,10 @@ export const usePokemonStore = defineStore('pokemon', {
   actions: {
     async getList() {
       this.list.loading = true
-      const data = await getPokemonList(this.list.page, this.list.pageSize)
-
       const baseStore = useBaseStore()
+      await Promise.all([baseStore.getTypeList(), baseStore.getColorList()])
+
+      const data = await getPokemonList(this.list.page, this.list.pageSize)
 
       data.forEach((pokemon, index) => {
         const types = baseStore.types.filter((type) =>

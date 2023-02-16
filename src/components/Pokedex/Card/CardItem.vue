@@ -21,7 +21,7 @@ defineProps<{
       ]"
     >
       <div
-        class="pattern absolute inset-0 rounded-xl opacity-30 mix-blend-overlay"
+        class="pattern absolute inset-0 rounded-xl opacity-20 mix-blend-overlay"
       ></div>
       <div class="relative rounded-lg">
         <div class="relative">
