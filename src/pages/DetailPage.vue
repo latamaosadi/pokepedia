@@ -23,7 +23,7 @@ const pokemonForms = computed(() => {
   return (pokemon.value?.forms || []).map((form) => ({
     label: form.name,
     value: form.id,
-    image: form.artwork,
+    image: form.sprite,
   }))
 })
 

@@ -17,6 +17,9 @@ defineProps<{
       <div
         class="pattern-carbon absolute inset-0 opacity-40 mix-blend-overlay"
       ></div>
+      <div
+        class="pattern-carbon absolute inset-0 opacity-0 mix-blend-color-dodge transition-all duration-150 group-hover:opacity-60"
+      ></div>
       <div class="absolute inset-0 flex">
         <div class="m-auto h-3/4 w-3/4 rounded-full bg-white/40 blur-xl"></div>
       </div>
@@ -33,14 +36,4 @@ defineProps<{
   </RouterLink>
 </template>
 
-<style scoped>
-.pattern {
-  opacity: 0.1;
-  background-image: linear-gradient(#000 2px, transparent 2px),
-    linear-gradient(90deg, #000 2px, transparent 2px),
-    linear-gradient(#000 1px, transparent 1px),
-    linear-gradient(90deg, #000 1px, #fff 1px);
-  background-size: 50px 50px, 50px 50px, 10px 10px, 10px 10px;
-  background-position: -2px -2px, -2px -2px, -1px -1px, -1px -1px;
-}
-</style>
+<style scoped></style>
