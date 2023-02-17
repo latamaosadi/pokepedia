@@ -50,6 +50,8 @@ module.exports = {
       },
       boxShadow: {
         '3d': '1px 1px 2px 0px rgba(255, 255, 255, 0.5) inset, -1px -1px 2px 0px rgba(55, 55, 55, 0.3) inset',
+        '3d-md':
+          '2px 2px 4px 0px rgba(255, 255, 255, 0.5) inset, -2px -2px 4px 0px rgba(55, 55, 55, 0.3) inset',
         solid: '6px 8px 0px 0px rgba(0,0,0,0.2);',
         'solid-sm': '4px 4px 0px 0px rgba(0,0,0,0.2);',
         'solid-md': '6px 6px 0px 0px rgba(0,0,0,0.2);',
