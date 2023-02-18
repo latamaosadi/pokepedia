@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import loading from '@/assets/images/loading.gif'
 import { useIntervalFn } from '@vueuse/shared'
 import { ref } from 'vue'
+import SlowPoke from './SlowPoke.vue'
 const counter = ref(1)
 const loadingText = ref('')
 
@@ -13,13 +13,9 @@ useIntervalFn(() => {
 
 <template>
   <div class="flex flex-col items-center justify-center">
-    <div class="aspect-square w-32">
-      <img
-        :src="loading"
-        alt=""
-        class="pixelated h-full w-full object-contain object-center"
-      />
+    <div class="w-40">
+      <SlowPoke class="animate-wiggle" />
     </div>
-    <p class="font-pixel text-lg font-bold">Loading{{ loadingText }}</p>
+    <p class="mt-6 font-pixel text-lg font-bold">Loading{{ loadingText }}</p>
   </div>
 </template>

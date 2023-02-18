@@ -19,8 +19,8 @@ const getColorList = async (): Promise<IType[]> => {
           allData.map(({ data }): IType => {
             return {
               name: data.name,
-              pokemon: data.pokemon_species.map(
-                (pokemon: any) => pokemon.url.match(regexPattern)[1],
+              pokemon: data.pokemon_species.map((pokemon: any) =>
+                parseInt(pokemon.url.match(regexPattern)[1]),
               ),
             }
           }),
