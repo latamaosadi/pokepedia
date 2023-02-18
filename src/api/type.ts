@@ -17,8 +17,8 @@ const getTypeList = async (): Promise<IType[]> => {
           allData.map(({ data }): IType => {
             return {
               name: data.name,
-              pokemon: data.pokemon.map(
-                ({ pokemon }: any) => pokemon.url.match(regexPattern)[1],
+              pokemon: data.pokemon.map(({ pokemon }: any) =>
+                parseInt(pokemon.url.match(regexPattern)[1]),
               ),
             }
           }),

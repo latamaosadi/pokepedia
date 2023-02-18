@@ -16,6 +16,6 @@ const icon = defineAsyncComponent(
 
 <style>
 .icon {
-  @apply w-5 fill-current;
+  @apply h-5 w-5 fill-current;
 }
 </style>

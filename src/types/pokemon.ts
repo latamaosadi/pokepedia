@@ -69,7 +69,7 @@ export interface INamedResource {
 export interface IType {
   name: PokemonType
   id?: number
-  pokemon?: []
+  pokemon?: number[]
 }
 
 export interface IForm {

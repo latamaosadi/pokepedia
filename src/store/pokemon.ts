@@ -47,16 +47,16 @@ export const usePokemonStore = defineStore('pokemon', {
 
       data.forEach((pokemon, index) => {
         const types = baseStore.types.filter((type) =>
-          type.pokemon?.map((id) => parseInt(id)).includes(pokemon.number),
+          type.pokemon?.includes(pokemon.number),
         )
         const color = baseStore.colors.find((color) =>
-          color.pokemon?.map((id) => parseInt(id)).includes(pokemon.number),
+          color.pokemon?.includes(pokemon.number),
         )?.name
         data[index].types = types
         data[index].color = color
       })
 
-      this.list.data.push(...data)
+      this.list.data = data
       this.list.loading = false
     },
     async getInfo(id: number) {
