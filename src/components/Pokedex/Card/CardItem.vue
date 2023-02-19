@@ -26,7 +26,7 @@ defineProps<{
           class="pattern absolute inset-0 rounded-xl opacity-20 mix-blend-overlay transition-all duration-300 group-hover:mix-blend-screen"
         ></div>
         <div
-          class="pattern absolute inset-0 rounded-xl opacity-0 mix-blend-screen transition-all duration-300 group-hover:opacity-60"
+          class="pattern absolute inset-0 rounded-xl opacity-0 mix-blend-screen transition-all duration-500 group-hover:opacity-60"
         ></div>
         <div class="relative rounded-lg">
           <div class="relative">

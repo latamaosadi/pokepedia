@@ -5,7 +5,12 @@ import { useRoute, useRouter } from 'vue-router'
 import TypeBadge from '@/components/Pokedex/TypeBadge.vue'
 import EvolutionChain from '@/components/Pokemon/EvolutionChain.vue'
 import { padNumber } from '@/utils/string'
-import { onClickOutside } from '@vueuse/core'
+import {
+  onClickOutside,
+  onKeyDown,
+  onKeyPressed,
+  onKeyStroke,
+} from '@vueuse/core'
 import DropDown from '@/components/DropDown.vue'
 import { appColor, pokemonColors } from '@/utils/colors'
 
@@ -23,7 +28,7 @@ const pokemonForms = computed(() => {
   return (pokemon.value?.forms || []).map((form) => ({
     label: form.name,
     value: form.id,
-    image: form.sprite,
+    image: form.artwork,
   }))
 })
 
@@ -37,9 +42,12 @@ onMounted(async () => {
   }
 })
 
-onClickOutside(container, () => {
+function closeDetail() {
   router.push({ name: 'dex' })
-})
+}
+
+onKeyDown('Escape', closeDetail)
+onClickOutside(container, closeDetail)
 
 onBeforeUnmount(() => {
   pokemonStore.clearInfo()
