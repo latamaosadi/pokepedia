@@ -68,19 +68,19 @@ const selectedLabel = computed(
                 `bg-poke-${color}/60`,
               ]"
             >
-              <div class="w-8 shrink-0">
+              <div class="w-12 shrink-0">
                 <img
                   :key="option?.value || 0"
                   v-lazy="option.image"
                   height="20"
                   width="20"
-                  class="pixelated w-full object-contain drop-shadow-solid duration-300 group-hover:animate-wiggle"
+                  class="w-full object-contain drop-shadow-solid duration-300 group-hover:animate-wiggle"
                 />
               </div>
               <span
                 :class="[
                   selected ? 'font-medium' : 'font-normal',
-                  'block truncate',
+                  'block truncate text-lg',
                 ]"
                 >{{ option.label }}</span
               >

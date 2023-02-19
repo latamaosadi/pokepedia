@@ -4,6 +4,10 @@
 
 * { -webkit-tap-highlight-color: rgba(0,0,0,0); }
 
+.vue-recycle-scroller__item-wrapper {
+  overflow: unset !important;
+}
+
 @layer utilities {
   .pattern {
     background-color: #000;

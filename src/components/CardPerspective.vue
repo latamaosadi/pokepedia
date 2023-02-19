@@ -1,30 +1,52 @@
 <script setup lang="ts">
-import { useMouseInElement } from '@vueuse/core'
-import { ref, computed } from 'vue'
+import {
+  // useDeviceOrientation,
+  useMouseInElement,
+} from '@vueuse/core'
+import {
+  ref,
+  computed,
+  // reactive
+} from 'vue'
 
 const card = ref<HTMLElement | null>(null)
 const { elementX, elementY, isOutside, elementWidth, elementHeight } =
-  useMouseInElement(card)
+  useMouseInElement(card, { handleOutside: false, touch: false })
+// const motion = reactive(useDeviceOrientation())
 
 const rotateStyle = computed(() => {
+  // if (motion.isSupported && (motion.alpha || motion.beta || motion.gamma)) {
+  //   return `rotateX(${motion.beta}deg) rotateY(${motion.gamma}deg) rotateZ(${motion.alpha}deg)`
+  // }
   if (isOutside.value) {
-    return `rotateX(0deg) rotateY(0deg)`
+    return `rotateX(0deg) rotateY(0deg) rotateZ(0deg)`
   }
-  const lengthX = Math.floor(elementHeight.value / 2)
-  const lengthY = Math.floor(elementWidth.value / 2)
-  const distanceX = lengthX - elementY.value
-  const distanceY = lengthY - elementX.value
-  // const lengthZ = Math.floor(Math.abs(Math.hypot(distanceX, distanceY)))
-  // const sinOfAngleX = Math.abs(distanceY) / lengthZ
-  const rotateX = (distanceX / lengthX) * 25
-  const rotateY = (distanceY / lengthY) * -15
-  // const angleZ = (Math.asin(sinOfAngleX) * 180) / Math.PI
-  // const rotateZ =
-  //   angleZ > 0
-  //     ? Math.sign(elementX.value * elementY.value) * (angleZ / 90) * 2
-  //     : 0
+  const newHeight = Math.floor(elementHeight.value / 2)
+  const newWidth = Math.floor(elementWidth.value / 2)
 
-  return `rotateX(${rotateX}deg) rotateY(${rotateY}deg)`
+  const distanceVertical = newHeight - elementY.value
+  const distanceHorizontal = newWidth - elementX.value
+
+  const rotateX = (distanceVertical / newHeight) * 25
+  const rotateY = (distanceHorizontal / newWidth) * -15
+
+  const height =
+    distanceVertical < 0
+      ? elementY.value - newHeight
+      : newHeight - elementY.value
+  const length =
+    distanceHorizontal < 0
+      ? elementX.value - newWidth
+      : newWidth - elementX.value
+  const lengthZ = Math.floor(Math.abs(Math.hypot(height, length)))
+  const sinus = height / lengthZ
+  const sinAngle = 45 - Math.abs(45 - (Math.asin(sinus) * 180) / Math.PI)
+  const rotateZ =
+    sinAngle > 0
+      ? Math.sign(distanceVertical * distanceHorizontal) * (sinAngle / 45) * -1
+      : 0
+
+  return `rotateX(${rotateX}deg) rotateY(${rotateY}deg) rotateZ(${rotateZ}deg)`
 })
 </script>
 <template>
