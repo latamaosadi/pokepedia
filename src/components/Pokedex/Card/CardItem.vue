@@ -23,12 +23,12 @@ defineProps<{
         ]"
       >
         <div
-          class="pattern absolute inset-0 rounded-xl opacity-20 mix-blend-overlay transition-all duration-300 group-hover:mix-blend-screen"
+          class="pattern absolute inset-0 opacity-20 mix-blend-overlay transition-all duration-300 group-hover:mix-blend-screen"
         ></div>
         <div
-          class="pattern absolute inset-0 rounded-xl opacity-0 mix-blend-screen transition-all duration-500 group-hover:opacity-60"
+          class="pattern absolute inset-0 opacity-0 mix-blend-screen transition-all duration-500 group-hover:opacity-60"
         ></div>
-        <div class="relative rounded-lg">
+        <div class="relative">
           <div class="relative">
             <div class="absolute inset-0 flex">
               <div class="m-auto h-32 w-32 rounded-full bg-white/40 blur"></div>
@@ -49,7 +49,7 @@ defineProps<{
         </div>
         <div class="absolute inset-x-0 bottom-0">
           <div
-            class="flex h-10 items-center justify-between rounded bg-black/30 px-2 text-center font-pixel text-white sm:text-lg"
+            class="flex h-10 items-center justify-between bg-black/30 px-2 text-center font-pixel text-white sm:text-lg"
           >
             <span
               ><span class="text-sm">No</span
