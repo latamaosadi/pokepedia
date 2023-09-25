@@ -19,7 +19,7 @@ export const usePokemonStore = defineStore('pokemon', {
       },
       list: {
         page: 1,
-        pageSize: 1017,
+        pageSize: 1008,
         data: [],
         loading: false,
       },
@@ -48,7 +48,6 @@ export const usePokemonStore = defineStore('pokemon', {
 
       const data = await getPokemonList(this.list.page, this.list.pageSize)
 
-      console.log('baseStore.colors :>> ', baseStore.colors)
       data.forEach((pokemon, index) => {
         const types = baseStore.types.filter((type) =>
           type.pokemon?.includes(pokemon.number),
@@ -59,7 +58,6 @@ export const usePokemonStore = defineStore('pokemon', {
         data[index].types = types
         data[index].color = color
       })
-      console.log('data :>> ', data)
 
       this.list.data = data
       this.list.loading = false
