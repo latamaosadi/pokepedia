@@ -3,10 +3,15 @@ import { IPokemon } from '@/types/pokemon'
 import TypeBadge from '@/components/Pokedex/TypeBadge.vue'
 import { padNumber } from '@/utils/string'
 import CardPerspective from '@/components/CardPerspective.vue'
+import { computed } from 'vue'
 
-defineProps<{
+const props = defineProps<{
   pokemon?: IPokemon
 }>()
+
+const backgroundColor = computed(
+  () => `bg-poke-${props.pokemon?.color || 'red'}/80`,
+)
 </script>
 
 <template>
@@ -14,7 +19,7 @@ defineProps<{
     <CardPerspective class="group">
       <div
         class="relative box-content aspect-card transform overflow-hidden rounded-lg p-2 text-slate-800 shadow-3d"
-        :class="[`bg-poke-${pokemon?.color || 'red'}/80`]"
+        :class="[backgroundColor]"
       >
         <div
           class="absolute inset-0 bg-gradient-to-b from-transparent via-white/60 to-transparent"
