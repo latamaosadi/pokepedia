@@ -9,6 +9,14 @@ export function defaultSprite(id: string | number) {
   return `${baseUrl}/${id}.png`
 }
 
-export function artwork(id: string | number) {
-  return `${baseUrl}/other/official-artwork/${id}.png`
+export function artwork(id: string | number, shiny = false) {
+  let url = `${baseUrl}/other/official-artwork/`
+  if (shiny) {
+    url += 'shiny/'
+  }
+  return `${url}/${id}.png`
+}
+
+export function homeModel(id: string | number) {
+  return `${baseUrl}/other/home/${id}.png`
 }

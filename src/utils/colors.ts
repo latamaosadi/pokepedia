@@ -20,14 +20,14 @@ export const typeColors: Record<string, string> = {
   fairy: '#F0B6BC',
 }
 export const pokemonColors: Record<string, string> = {
-  black: '#03071e',
-  blue: '#6890F0',
-  brown: '#705848',
-  gray: '#4a4e69',
-  green: '#78C850',
-  pink: '#F85888',
-  purple: '#A040A0',
-  red: '#C03028',
+  black: '#1A1110',
+  blue: '#3185fc',
+  brown: '#79443B',
+  gray: '#536878',
+  green: '#008000',
+  pink: '#f61067',
+  purple: '#5e239d',
+  red: '#CE2029',
   white: '#B8B8D0',
-  yellow: '#F8D030',
+  yellow: '#FFBF00',
 }

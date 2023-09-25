@@ -150,6 +150,7 @@ export interface IPokemonInfo extends IPokemon {
   height?: string
   weight?: string
   forms: IForm[]
+  species: IPokemonSpecies
 }
 
 export interface IPokemonList {

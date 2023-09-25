@@ -4,6 +4,10 @@
 
 * { -webkit-tap-highlight-color: rgba(0,0,0,0); }
 
+html {
+  font-size: 16px;
+}
+
 .vue-recycle-scroller__item-wrapper {
   overflow: unset !important;
 }
@@ -11,7 +15,7 @@
 @layer utilities {
   .pattern {
     background-color: #000;
-    background-image:  repeating-radial-gradient( circle at 50% 50%, transparent 0, #ddd 20px ), repeating-linear-gradient( #444cf755, #444cf7 );
+    background-image:  repeating-radial-gradient( circle at 50% 50%, transparent 0, #ddd 30px ), repeating-linear-gradient( #444cf755, #444cf7 );
   }
   .pattern-carbon {
     background:

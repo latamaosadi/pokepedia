@@ -7,7 +7,7 @@ import {
   IPokemonInfo,
   IPokemonSpecies,
 } from '@/types/pokemon'
-import { animatedSprite, defaultSprite, artwork } from '@/types/sprite'
+import { animatedSprite, defaultSprite, artwork } from '@/utils/sprite'
 import {
   getDescription,
   getGenus,
@@ -40,8 +40,8 @@ export const getSpeciesDetail = async (
     varietiesUrl: data.varieties
       .filter(
         (variety: any) =>
-          !variety.is_default &&
-          !['totem', 'battle-bond', 'minior'].filter((word) =>
+          variety.is_default ||
+          !['totem', '-meteor', 'koraidon', 'miraidon'].filter((word) =>
             variety.pokemon.name.includes(word),
           ).length,
       )
@@ -110,21 +110,21 @@ export const getPokemonDetail = async (url: string) => {
 
 export const getPokemonForms = async (
   pokemon: IPokemonSpecies,
-  infoData: any,
+  // infoData: any,
 ): Promise<IForm[]> => {
   const forms: IForm[] = [
-    {
-      id: pokemon.id,
-      name: pokemon.formattedName,
-      value: 'default',
-      height: convert(infoData.height, 'decimeters').to('best').toString(2),
-      weight: convert(infoData.weight, 'hectograms').to('best').toString(2),
-      types: infoData.types.map((type: Record<string, UnknownObject>) => ({
-        name: type.type.name,
-      })),
-      sprite: defaultSprite(pokemon.id),
-      artwork: artwork(pokemon.id),
-    },
+    // {
+    //   id: pokemon.id,
+    //   name: pokemon.formattedName,
+    //   value: 'default',
+    //   height: convert(infoData.height, 'decimeters').to('best').toString(2),
+    //   weight: convert(infoData.weight, 'hectograms').to('best').toString(2),
+    //   types: infoData.types.map((type: Record<string, UnknownObject>) => ({
+    //     name: type.type.name,
+    //   })),
+    //   sprite: defaultSprite(pokemon.id),
+    //   artwork: artwork(pokemon.id),
+    // },
 
     ...(await Promise.all(
       pokemon.varietiesUrl.map(async (url) => {
@@ -154,31 +154,35 @@ export const getPokemonForms = async (
   return forms
 }
 
-export const getPokemonInfo = async (id: number) => {
-  const { data: infoData } = await getPokemonDetail(
-    `https://pokeapi.co/api/v2/pokemon/${id}`,
+export const getPokemonInfo = async (id: number | string) => {
+  // const { data: infoData } = await getPokemonDetail(
+  //   `https://pokeapi.co/api/v2/pokemon/${id}`,
+  // )
+  // const speciesData = await getSpeciesDetail(infoData.species.url)
+  const speciesData = await getSpeciesDetail(
+    `https://pokeapi.co/api/v2/pokemon-species/${id}`,
   )
-  const speciesData = await getSpeciesDetail(infoData.species.url)
   const { data: evolutionChainData } = await axios.get(speciesData.evolutionUrl)
 
   const pokemon: IPokemonInfo = {
     name: speciesData.name,
     formattedName: speciesData.formattedName,
     number: speciesData.pokedexNumber,
-    animatedSprite: animatedSprite(id),
-    sprite: defaultSprite(id),
-    artwork: artwork(id),
+    animatedSprite: animatedSprite(speciesData.pokedexNumber),
+    sprite: defaultSprite(speciesData.pokedexNumber),
+    artwork: artwork(speciesData.pokedexNumber),
     color: speciesData.color,
-    types: infoData.types.map((type: Record<string, UnknownObject>) => ({
-      name: type.type.name,
-    })),
+    // types: infoData.types.map((type: Record<string, UnknownObject>) => ({
+    //   name: type.type.name,
+    // })),
     evolutionChain: await buildEvolution(evolutionChainData.chain),
     moves: [],
     genus: speciesData.genus,
     description: speciesData.description,
-    height: convert(infoData.height, 'decimeters').to('best').toString(2),
-    weight: convert(infoData.weight, 'hectograms').to('best').toString(2),
-    forms: await getPokemonForms(speciesData, infoData),
+    // height: convert(infoData.height, 'decimeters').to('best').toString(2),
+    // weight: convert(infoData.weight, 'hectograms').to('best').toString(2),
+    forms: await getPokemonForms(speciesData),
+    species: speciesData,
   }
   return pokemon
 }

@@ -9,8 +9,7 @@ export function formatFormName(name: string, speciesName: string) {
     'zygarde-50-power-construct': '50% Power Construct',
     'zygarde-complete': 'Complete',
     'oricorio-pau': "pa'u",
-    'minior-red': 'core',
-    'minior-red-meteor': 'meteor',
+    'minior-red-meteor': 'Minior (Meteor)',
     'necrozma-dusk': 'Dusk Mane Necrozma',
     'necrozma-dawn': 'Dawn Wings Necrozma',
     'necrozma-ultra': 'Ultra Necrozma',
@@ -23,8 +22,8 @@ export function formatFormName(name: string, speciesName: string) {
     'calyrex-shadow': 'Shadow Rider Calyrex',
   }
 
-  if (manualNameFormat[speciesName]) {
-    return manualNameFormat[speciesName]
+  if (manualNameFormat[name]) {
+    return manualNameFormat[name]
   }
 
   if (

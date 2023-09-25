@@ -1,3 +1,7 @@
-<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <path fill-rule="evenodd" clip-rule="evenodd" d="M4 4H20H22V16H20H4H2V4H4ZM20 14V6H4V14H20ZM22 18H2V20H22V18Z" />
+<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect x="4.53285" y="19.5406" width="41" height="59" rx="6" transform="rotate(-20 4.53285 19.5406)" fill="#7C90D7"
+    stroke="#3B55AF" stroke-width="4" />
+  <rect x="19.3861" y="10.7501" width="41" height="59" rx="6" fill="#7CD7B1" stroke="#0FA84C" stroke-width="4" />
+  <rect x="36.712" y="5.51777" width="41" height="59" rx="6" transform="rotate(20 36.712 5.51777)" fill="#D77C7C"
+    stroke="#AF3B3B" stroke-width="4" />
 </svg>

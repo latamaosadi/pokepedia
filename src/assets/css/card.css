@@ -1,0 +1,121 @@
+.card {
+  background: linear-gradient(var(--ang, 180deg), #ff9528, #3f7ea6);
+}
+.card, .card:before, .card:after {
+  --strip-stop: 100%;
+  --strip-f: .25;
+  --strip-stop-0: calc(var(--strip-f)*var(--strip-stop));
+  --strip-stop-1: calc(var(--strip-stop) - var(--strip-stop-0));
+  --strip-end: red;
+  --strip-mid: transparent;
+  --strip-list:
+    var(--strip-end) 0,
+    var(--strip-end) var(--strip-stop-0),
+    var(--strip-mid) 0,
+    var(--strip-mid) var(--strip-stop-1),
+    var(--strip-end) 0,
+    var(--strip-end) var(--strip-stop);
+  --joint-list:
+    var(--joint-end, red) var(--joint-stop, 25%),
+    var(--joint-mid, transparent) 0;
+  --joint-0:
+    linear-gradient(135deg, var(--joint-list));
+  --joint-1:
+    linear-gradient(-135deg, var(--joint-list));
+  --joint-2:
+    linear-gradient(-45deg, var(--joint-list));
+  --joint-3:
+    linear-gradient(45deg, var(--joint-list));
+}
+.card:before, .card:after {
+  --i: 0;
+  --noti: calc(1 - var(--i));
+  --sgni: calc(2*var(--i) - 1);
+  --c: hsl(0, 0%, 0%, var(--i));
+  --notc: hsl(0, 0%, 0%, var(--noti));
+  --fill: linear-gradient(var(--c), var(--c));
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  --c0: RGB(calc( 		var(--i)*63 + var(--noti)*255), calc( 		var(--i)*126 + var(--noti)*149), calc( 		var(--i)*166 + var(--noti)*40));
+  --c1: RGB(calc( 		var(--i)*255 + var(--noti)*63), calc( 		var(--i)*149 + var(--noti)*126), calc( 		var(--i)*40 + var(--noti)*166));
+  -webkit-mask: var(--mask);
+  mask: var(--mask);
+  -webkit-mask-position: var(--mask-o, 50% 50%);
+  mask-position: var(--mask-o, 50% 50%);
+  -webkit-mask-size: var(--mask-d);
+  mask-size: var(--mask-d);
+  content: "";
+}
+.card:after {
+  --i: 1 ;
+}
+
+.card.holographic-diagonal {
+  background: linear-gradient(var(--ang, 180deg), #fff, #80FF00);
+}
+.card.holographic-diagonal:before, .card.holographic-diagonal:after {
+  background: linear-gradient(calc(var(--i)*180deg + 45deg), var(--c1), transparent);
+  --strip-stop: 1em;
+  --strip-f: calc(.125 + .25*var(--i));
+  --mask:
+    var(--fill),
+    repeating-linear-gradient(-45deg, var(--strip-list));
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
+.card.holographic {
+  --ang: 45deg;
+}
+.card.holographic:before, .card.holographic:after {
+  --strip-end: transparent;
+  --strip-mid: var(--c0);
+  --strip-stop: 10px;
+  --strip-f: .4;
+  background: repeating-linear-gradient(var(--strip-list)), repeating-linear-gradient(60deg, var(--strip-list)), repeating-linear-gradient(-60deg, var(--strip-list));
+  --mask:
+    conic-gradient(from calc((var(--i) - .75)*180deg),
+        transparent, red, transparent 50%) ;
+}
+
+.card.wave {
+  --d: 5em;
+  --ang: 135deg;
+  background: linear-gradient(var(--ang, 180deg), #fff, #fff);
+}
+.card.wave:before, .card.wave:after {
+  --strip-end: var(--c0);
+  --strip-stop: calc(.1*var(--d));
+
+  background: repeating-radial-gradient(circle, var(--strip-list)) calc(50% - var(--i)*.5*var(--d)) 50%/var(--d) var(--d);
+  --joint-end: var(--notc);
+  --joint-mid: var(--c);
+  --joint-stop: 50%;
+  --mask:
+    linear-gradient(var(--joint-list));
+  --mask-o: 50% 50%;
+  --mask-d: 100% var(--d) ;
+}
+
+.card.stripes {
+  --d: 8em;
+  --ang: 45deg;
+  --strip-stop: calc(.0625*var(--d));
+  --narr: var(--strip-list);
+}
+.card.stripes:before, .card.stripes:after {
+  background: var(--c0);
+  --strip-end: var(--c);
+  --strip-mid: var(--notc);
+  --strip-stop: var(--d);
+  --mask:
+    linear-gradient(90deg, var(--c), var(--notc)),
+    repeating-linear-gradient(45deg, var(--narr)),
+    repeating-linear-gradient(90deg, var(--strip-list)),
+    repeating-linear-gradient(-45deg, var(--strip-list));
+  -webkit-mask-composite: source-in, source-in, source-in, source-over;
+  mask-composite: intersect;
+}

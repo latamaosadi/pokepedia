@@ -39,6 +39,9 @@ export const usePokemonStore = defineStore('pokemon', {
   },
   actions: {
     async getList() {
+      if (this.list.data.length > 1) {
+        return
+      }
       this.list.loading = true
       const baseStore = useBaseStore()
       await Promise.all([baseStore.getTypeList(), baseStore.getColorList()])
@@ -59,8 +62,8 @@ export const usePokemonStore = defineStore('pokemon', {
       this.list.data = data
       this.list.loading = false
     },
-    async getInfo(id: number) {
-      const data = await getPokemonInfo(id)
+    async getInfo(name: string) {
+      const data = await getPokemonInfo(name)
       this.info = data
     },
     clearInfo() {

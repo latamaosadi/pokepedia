@@ -5,9 +5,14 @@ import TheIcon from '@/components/TheIcon.vue'
 import { useScroll } from '@vueuse/core'
 import { CardContainer, ListContainer } from '@/components/Pokedex'
 import LoadingData from '@/components/LoadingData.vue'
+import { LocationQuery, useRoute, useRouter } from 'vue-router'
 
 const pokemonStore = usePokemonStore()
 const cardMode = ref(true)
+const timeout = ref<ReturnType<typeof setTimeout> | null>(null)
+const keyword = ref('')
+const route = useRoute()
+const router = useRouter()
 
 const isLoading = computed(() => pokemonStore.list.loading)
 
@@ -16,7 +21,18 @@ const { y, isScrolling, arrivedState, directions } = useScroll(window, {
 })
 
 function searchPokemon(event: Event) {
-  pokemonStore.setKeyword((event.target as HTMLInputElement).value)
+  const keyword = (event.target as HTMLInputElement).value
+  pokemonStore.setKeyword(keyword)
+  if (timeout.value) {
+    clearTimeout(timeout.value)
+  }
+  timeout.value = setTimeout(() => {
+    const query: LocationQuery = {}
+    if (keyword) {
+      query.search = keyword
+    }
+    router.replace({ query })
+  }, 200)
 }
 
 function toggleCardMode(state: boolean) {
@@ -24,6 +40,10 @@ function toggleCardMode(state: boolean) {
 }
 
 onMounted(async () => {
+  keyword.value = route.query['search'] as string
+  if (keyword.value) {
+    pokemonStore.setKeyword(keyword.value)
+  }
   await pokemonStore.getList()
 })
 </script>
@@ -32,7 +52,7 @@ onMounted(async () => {
   <div class="px-2">
     <div class="sticky inset-x-0 top-0 z-10">
       <div
-        class="relative mx-auto max-w-2xl p-2 backdrop-blur-md transition-all duration-200"
+        class="relative mx-auto max-w-2xl rounded-bl-lg rounded-br-lg p-2 backdrop-blur-md transition-all duration-200"
         :class="[
           {
             '-translate-y-full':
@@ -49,12 +69,13 @@ onMounted(async () => {
               <div
                 class="flex h-full items-center justify-center p-2 text-retro-black"
               >
-                <TheIcon name="search" />
+                <TheIcon name="search" class="text-lime-700" />
               </div>
             </div>
             <input
+              v-model="keyword"
               type="text"
-              class="pixelated w-full appearance-none rounded-sm bg-retro-green py-2 pl-10 pr-4 font-pixel text-retro-black shadow-inner shadow-retro-black/40 placeholder:text-retro-black focus:outline-none"
+              class="pixelated h-full w-full appearance-none rounded-sm bg-retro-green py-2 pl-10 pr-4 font-pixel text-lime-900 shadow-inner shadow-retro-black/40 placeholder:text-lime-900 focus:outline-none"
               placeholder="Search your Pokemon"
               @input="(event) => searchPokemon(event)"
             />
@@ -64,13 +85,13 @@ onMounted(async () => {
               :class="['filter-btn', { active: cardMode }]"
               @click.prevent="toggleCardMode(true)"
             >
-              <TheIcon class="h-7 w-7" name="card-stack" />
+              <TheIcon class="h-6 w-6" name="card-stack" />
             </button>
             <button
               :class="['filter-btn', { active: !cardMode }]"
               @click.prevent="toggleCardMode(false)"
             >
-              <TheIcon class="h-7 w-7" name="group" />
+              <TheIcon class="h-6 w-6" name="group" />
             </button>
           </div>
         </div>
@@ -91,9 +112,11 @@ onMounted(async () => {
 
 <style scoped>
 .filter-btn {
-  @apply rounded  bg-retro-red p-1 text-center text-sm text-slate-300 shadow-3d hover:shadow-inner;
+  @apply rounded border border-retro-red/40 p-1 text-center text-sm text-slate-300 shadow-3d hover:shadow-inner;
+  /* @apply bg-retro-red; */
+  /* @apply bg-white; */
 }
 .filter-btn.active {
-  @apply bg-retro-red-darker shadow-inner;
+  @apply shadow-inner;
 }
 </style>

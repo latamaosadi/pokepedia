@@ -35,7 +35,9 @@ const selectedLabel = computed(
     @update:model-value="(value) => emit('update:modelValue', value.value)"
   >
     <ListboxLabel v-if="label">{{ label }}:</ListboxLabel>
-    <div class="relative rounded-sm bg-white ring-1 ring-black ring-opacity-20">
+    <div
+      class="relative rounded-sm bg-black text-white ring-1 ring-slate-100 ring-opacity-50"
+    >
       <ListboxButton
         class="relative flex w-full cursor-default items-center justify-between rounded-sm px-2 text-left font-pixel shadow-inner focus:outline-none sm:text-sm md:py-1"
         :class="`bg-poke-${color}/50`"
@@ -52,7 +54,7 @@ const selectedLabel = computed(
         enter-to-class="opacity-100 translate-y-0"
       >
         <ListboxOptions
-          class="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-sm bg-white text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm"
+          class="absolute z-10 mt-1 max-h-32 w-full overflow-auto rounded-sm bg-black text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm"
         >
           <ListboxOption
             v-for="(option, index) in options"
@@ -63,18 +65,18 @@ const selectedLabel = computed(
             <li
               class="font-pixel"
               :class="[
-                active ? `bg-poke-${color}/80` : 'text-gray-900',
+                active && `bg-poke-${color}/80`,
                 'relative flex cursor-default select-none items-center gap-2 py-1 px-2',
                 `bg-poke-${color}/60`,
               ]"
             >
-              <div class="w-12 shrink-0">
+              <div class="aspect-square w-12 shrink-0 overflow-hidden rounded">
                 <img
                   :key="option?.value || 0"
                   v-lazy="option.image"
                   height="20"
                   width="20"
-                  class="w-full object-contain drop-shadow-solid duration-300 group-hover:animate-wiggle"
+                  class="h-16 w-16 object-cover object-center"
                 />
               </div>
               <span
