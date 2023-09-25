@@ -1,9 +1,14 @@
+const defaultTheme = require('tailwindcss/defaultTheme')
+
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: ['./index.html', './src/**/*.{vue,js,ts,jsx,tsx}'],
   important: true,
   theme: {
     extend: {
+      aspectRatio: {
+        card: '3 / 4',
+      },
       colors: {
         retro: {
           brown: '#948c3c',
@@ -33,19 +38,20 @@ module.exports = {
           fairy: '#F0B6BC',
         },
         poke: {
-          black: '#03071e',
-          blue: '#6890F0',
-          brown: '#705848',
-          gray: '#4a4e69',
-          green: '#78C850',
-          pink: '#F85888',
-          purple: '#A040A0',
-          red: '#C03028',
+          black: '#1A1110',
+          blue: '#3185fc',
+          brown: '#79443B',
+          gray: '#536878',
+          green: '#008000',
+          pink: '#f61067',
+          purple: '#5e239d',
+          red: '#CE2029',
           white: '#B8B8D0',
-          yellow: '#F8D030',
+          yellow: '#FFBF00',
         },
       },
       fontFamily: {
+        sans: ['Mooli', ...defaultTheme.fontFamily.sans],
         pixel: ['VT323', 'monospace'],
       },
       boxShadow: {
@@ -71,6 +77,7 @@ module.exports = {
       },
       dropShadow: {
         solid: '1px 1px 0 rgba(0, 0, 0, 0.4)',
+        'solid-sm': '2px 2px 0 rgba(0, 0, 0, 0.4)',
         'solid-md': '2px 4px 0 rgba(0, 0, 0, 0.4)',
         'solid-lg': '6px 8px 0 rgba(0, 0, 0, 0.4)',
         shine: '0px 0px 2px rgba(251, 236, 93, 0.8)',

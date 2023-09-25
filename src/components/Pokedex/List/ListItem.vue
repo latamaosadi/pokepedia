@@ -7,9 +7,7 @@ defineProps<{
 </script>
 
 <template>
-  <RouterLink
-    :to="{ name: 'dex.detail', params: { id: pokemon?.number || 0 } }"
-  >
+  <RouterLink :to="{ name: 'dex.detail', params: { id: pokemon?.name || 0 } }">
     <div
       class="group relative overflow-hidden rounded border-4 border-double bg-slate-100"
       :class="`border-poke-${pokemon?.color}`"

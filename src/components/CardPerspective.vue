@@ -1,21 +1,48 @@
 <script setup lang="ts">
 import { useMouseInElement } from '@vueuse/core'
-import { ref, watch } from 'vue'
+import { ref, watch, onMounted } from 'vue'
+
+interface IRotation {
+  x: number
+  y: number
+  z: number
+}
+
+const props = withDefaults(
+  defineProps<{
+    interactive?: boolean
+    rotation?: IRotation
+    resetOnHover?: boolean
+  }>(),
+  {
+    interactive: true,
+    rotation: () => ({ x: 0, y: 0, z: 0 }),
+    resetOnHover: false,
+  },
+)
 
 const card = ref<HTMLElement | null>(null)
 const innerCard = ref<HTMLElement | null>(null)
 const { elementX, elementY, isOutside, elementWidth, elementHeight } =
-  useMouseInElement(card, { handleOutside: false, touch: false })
+  useMouseInElement(card, {
+    handleOutside: false,
+    touch: false,
+  })
+
+onMounted(() => {
+  animateCard(props.rotation)
+})
 
 watch([elementX, elementY, isOutside], ([pointX, pointY, outsideEl]) => {
-  if (outsideEl && innerCard.value?.animate) {
-    innerCard.value.animate(
-      {
-        'will-change': 'transform',
-        transform: `rotateX(0deg) rotateY(0deg) rotateZ(0deg)`,
-      },
-      { duration: 600, fill: 'forwards' },
-    )
+  if (!props.interactive) {
+    return
+  }
+  if (outsideEl) {
+    animateCard(props.rotation)
+    return
+  }
+  if (props.resetOnHover) {
+    animateCard({ x: 0, y: 0, z: 0 }, 600)
     return
   }
   const newHeight = Math.floor(elementHeight.value / 2)
@@ -36,26 +63,27 @@ watch([elementX, elementY, isOutside], ([pointX, pointY, outsideEl]) => {
     sinAngle > 0
       ? Math.sign(distanceVertical * distanceHorizontal) * (sinAngle / 45) * 3
       : 0
-  if (innerCard.value?.animate) {
-    innerCard.value.animate(
-      {
-        'will-change': 'transform',
-        transform: `rotateX(${rotateX}deg) rotateY(${rotateY}deg) rotateZ(${rotateZ}deg)`,
-      },
-      { duration: 300, fill: 'forwards' },
-    )
-  }
+  animateCard({ x: rotateX, y: rotateY, z: rotateZ })
 })
+
+function animateCard(rotation: IRotation, duration = 300) {
+  if (!innerCard.value?.animate) {
+    return
+  }
+
+  innerCard.value.animate(
+    {
+      'will-change': 'transform',
+      transform: `rotateX(${rotation.x}deg) rotateY(${rotation.y}deg) rotateZ(${rotation.z}deg)`,
+    },
+    { duration, fill: 'forwards' },
+  )
+}
 </script>
 <template>
-  <div ref="card">
-    <div class="perspective group relative">
-      <div
-        ref="innerCard"
-        class="relative overflow-hidden duration-150 group-hover:drop-shadow-lg"
-      >
-        <slot />
-      </div>
+  <div ref="card" class="perspective relative">
+    <div ref="innerCard">
+      <slot />
     </div>
   </div>
 </template>
