@@ -1,0 +1,53 @@
+@import 'tailwindcss';
+
+@layer theme {
+  :root {
+    --font-sans: 'Nunito', sans-serif;
+  }
+}
+
+@theme {
+  --font-inter: 'Inter', sans-serif;
+  --font-pixel: 'VT323', 'monospace';
+
+  --color-type-normal: #a8a878;
+  --color-type-fighting: #c03028;
+  --color-type-flying: #a890f0;
+  --color-type-poison: #a040a0;
+  --color-type-ground: #e0c068;
+  --color-type-rock: #b8a038;
+  --color-type-bug: #a8b820;
+  --color-type-ghost: #705898;
+  --color-type-steel: #b8b8d0;
+  --color-type-fire: #f08030;
+  --color-type-water: #6890f0;
+  --color-type-grass: #78c850;
+  --color-type-electric: #f8d030;
+  --color-type-psychic: #f85888;
+  --color-type-ice: #98d8d8;
+  --color-type-dragon: #7038f8;
+  --color-type-dark: #705848;
+  --color-type-fairy: #f0b6bc;
+
+  --color-poke-black: #1a1110;
+  --color-poke-blue: #3185fc;
+  --color-poke-brown: #79443b;
+  --color-poke-gray: #536878;
+  --color-poke-green: #008000;
+  --color-poke-pink: #f61067;
+  --color-poke-purple: #5e239d;
+  --color-poke-red: #ce2029;
+  --color-poke-white: #b8b8d0;
+  --color-poke-yellow: #ffbf00;
+
+  --shadow-3d: 1px 1px 2px 0px rgba(255, 255, 255, 0.5) inset,
+    -1px -1px 2px 0px rgba(55, 55, 55, 0.3) inset;
+
+  --drop-shadow-shine: 0px 0px 2px rgba(255, 255, 255, 0.8);
+  --drop-shadow-shine-md: 0px 0px 4px rgba(255, 255, 255, 0.8);
+  --drop-shadow-shine-lg: 0px 0px 8px rgba(255, 255, 255, 0.8);
+  --drop-shadow-solid: 1px 1px 0 rgba(0, 0, 0, 0.4);
+  --drop-shadow-solid-sm: 2px 2px 0 rgba(0, 0, 0, 0.4);
+  --drop-shadow-solid-md: 2px 4px 0 rgba(0, 0, 0, 0.4);
+  --drop-shadow-solid-lg: 6px 8px 0 rgba(0, 0, 0, 0.4);
+}
