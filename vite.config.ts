@@ -30,7 +30,13 @@ const pwaOptions: Partial<VitePWAOptions> = {
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [vue(), vueDevTools(), tailwindcss(), webfontDownload(), VitePWA(pwaOptions)],
+  plugins: [
+    vue(),
+    vueDevTools(),
+    tailwindcss(),
+    webfontDownload(),
+    VitePWA(pwaOptions),
+  ],
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
