@@ -1,5 +1,4 @@
-const baseUrl =
-  'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon'
+const baseUrl = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon'
 
 export function animatedSprite(id: string | number) {
   return `${baseUrl}/versions/generation-v/black-white/animated/${id}.gif`
