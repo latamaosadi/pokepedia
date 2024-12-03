@@ -78,6 +78,7 @@ function scrollTo(index: number) {
               ></div>
               <img
                 v-lazy="pokemon.sprite"
+                :alt="`${pokemon.formattedName} Sprite`"
                 class="absolute inset-0 size-full bg-white/50 bg-contain dark:bg-neutral-800/70"
               />
             </div>

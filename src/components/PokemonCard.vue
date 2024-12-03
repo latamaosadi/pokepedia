@@ -122,6 +122,7 @@ const orb2Style = computed((): CSSProperties => {
           'absolute inset-0 mx-auto size-full rounded-xl object-contain object-center drop-shadow-lg transition-all duration-300',
           { 'scale-125': cardActive },
         ]"
+        :alt="`${pokemon?.formattedName} Card`"
         v-lazy="pokemon?.artwork"
       />
     </div>
