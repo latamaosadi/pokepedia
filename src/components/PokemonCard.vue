@@ -18,7 +18,8 @@ const {
 }>()
 
 const target = ref(null)
-const { isOutside, elementX, elementY, elementWidth, elementHeight } = useMouseInElement(target)
+const { isOutside, elementX, elementY, elementWidth, elementHeight } =
+  useMouseInElement(target)
 const { width } = useElementSize(target)
 
 const cardActive = computed(() => !interactive || !isOutside.value)
@@ -28,7 +29,9 @@ const backgroundStyle = computed((): CSSProperties => {
     position: 'absolute',
     inset: 0,
     background: `radial-gradient(circle at bottom left ,var(--color-poke-${pokemon?.color}) 35%, transparent 36%), radial-gradient(circle at top right ,var(--color-poke-${pokemon?.color}) 35%, transparent 36%), radial-gradient(circle at center ,var(--color-poke-${pokemon?.color}) 15%, transparent 16%)`,
-    transition: isOutside.value ? '300ms ease-in-out all' : '50ms ease-in-out all',
+    transition: isOutside.value
+      ? '300ms ease-in-out all'
+      : '50ms ease-in-out all',
 
     backgroundPosition: isOutside.value
       ? '0 0'

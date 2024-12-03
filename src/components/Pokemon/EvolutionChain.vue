@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { IEvolutionChain } from '@/types/pokemon'
+import { type IEvolutionChain } from '@/types/pokemon'
 import { computed, ref } from 'vue'
-import TheIcon from '../TheIcon.vue'
 
 const props = defineProps<{
   evolution?: IEvolutionChain
@@ -19,14 +18,14 @@ const levelUpRequirement = computed(
 const nextEvolutions = computed(() => props.evolution?.evolvesTo.length || 0)
 </script>
 <template>
-  <div class="p-2 font-pixel">
+  <div class="font-pixel p-2">
     <div class="relative inline-block gap-2">
       <div
         class="absolute inset-x-0 h-full w-full rounded-full bg-white/50 blur-sm"
       ></div>
       <div
         v-if="evolution?.evolutionDetail.method"
-        class="pointer-events-none absolute right-0 top-0 z-10"
+        class="pointer-events-none absolute top-0 right-0 z-10"
       >
         <div class="rounded-xl bg-white/40">
           <!-- <p class="text-center font-pixel">
@@ -39,7 +38,6 @@ const nextEvolutions = computed(() => props.evolution?.evolvesTo.length || 0)
                   <TheIcon class="h-5 w-5 text-green-700" name="level-up" />
                 </div>
               </div> -->
-              <TheIcon class="h-5 w-5" name="level-up" />
               <span class="leading-none">{{ levelUpRequirement }}</span>
             </span>
           </div>
@@ -74,7 +72,7 @@ const nextEvolutions = computed(() => props.evolution?.evolvesTo.length || 0)
               v-lazy="evolution?.sprite"
               height="160"
               width="160"
-              class="pixelated relative w-full object-contain drop-shadow-solid-sm duration-300 group-hover:animate-wiggle"
+              class="pixelated drop-shadow-solid-sm group-hover:animate-wiggle relative w-full object-contain duration-300"
             />
           </div>
           <div class="absolute inset-x-0 bottom-0">
@@ -91,7 +89,7 @@ const nextEvolutions = computed(() => props.evolution?.evolvesTo.length || 0)
     </div>
     <template v-if="hasAnotherEvolution">
       <div
-        class="ml-10 mt-2"
+        class="mt-2 ml-10"
         :class="{
           'grid-cols-2 gap-4 sm:grid': nextEvolutions > 1,
         }"

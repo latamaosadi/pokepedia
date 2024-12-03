@@ -1,5 +1,5 @@
-import { Dic } from '@/types/generic'
-import { INamedResource } from '@/types/pokemon'
+import type { Dic } from '@/types/generic'
+import type { INamedResource } from '@/types/pokemon'
 
 export function getResourceName(object: INamedResource | Dic) {
   return object.name || ''

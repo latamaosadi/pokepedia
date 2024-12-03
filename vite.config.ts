@@ -18,7 +18,8 @@ const pwaOptions: Partial<VitePWAOptions> = {
   registerType: 'autoUpdate',
   pwaAssets: { image: 'public/logo.svg' },
   workbox: {
-    globPatterns: ['**/*.{js,css,png,svg,ico,txt,woff,woff2}'],
+    globPatterns: ['**/*.{js,css,png,svg,ico,woff,woff2}'],
+    navigateFallback: undefined,
     runtimeCaching: [
       {
         urlPattern: /^https:\/\/raw\.githubusercontent\.com\/.*/i,

@@ -46,7 +46,7 @@ function scrollTo(index: number) {
     </div>
     <RecycleScroller
       ref="containerEl"
-      class="scroller h-full max-h-80 overflow-x-hidden overflow-y-auto py-32 pl-4"
+      class="scroller h-full max-h-80 overflow-x-hidden overflow-y-auto rounded-xl bg-neutral-200 py-32 pl-4 dark:bg-neutral-800"
       :items="pokemonStore.list"
       :item-size="56"
       key-field="number"
@@ -62,14 +62,14 @@ function scrollTo(index: number) {
             :class="[
               'flex items-center gap-2 rounded-l-full transition-all select-none',
               {
-                'bg-blue-400/30': selected,
+                'bg-blue-400/30 dark:bg-indigo-700/60': selected,
                 'cursor-pointer hover:bg-blue-200/30': !selected,
               },
             ]"
             :style
           >
             <div
-              class="relative size-10 overflow-hidden rounded-full inset-shadow-sm inset-shadow-white"
+              class="relative size-10 overflow-hidden rounded-full inset-shadow-sm inset-shadow-white dark:inset-shadow-neutral-300"
               :style="`background-color: var(--color-poke-${pokemon.color})`"
             >
               <div
@@ -78,12 +78,17 @@ function scrollTo(index: number) {
               ></div>
               <img
                 v-lazy="pokemon.sprite"
-                class="absolute inset-0 size-full bg-white/50 bg-contain"
+                class="absolute inset-0 size-full bg-white/50 bg-contain dark:bg-neutral-800/70"
               />
             </div>
             <div :class="['grid']">
-              <h2 class="conde text-lg leading-tight font-bold">{{ pokemon.formattedName }}</h2>
-              <span class="text-xs leading-none font-bold text-neutral-500"
+              <h2
+                class="conde text-lg leading-tight font-bold text-neutral-800 dark:text-neutral-200"
+              >
+                {{ pokemon.formattedName }}
+              </h2>
+              <span
+                class="text-xs leading-none font-bold text-neutral-400 dark:text-neutral-500"
                 >#{{ padNumber(pokemon.number) }}</span
               >
             </div>
