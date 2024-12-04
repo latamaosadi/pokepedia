@@ -22,20 +22,10 @@ const selectPokemon = useDebounceFn((pokemon: IPokemon) => {
 onMounted(async () => {
   await pokemonStore.getList()
 })
-
-function getRandomNumberWithDecimal(min: number, max: number): number {
-  const random = Math.random() * (max - min) + min
-  return parseFloat(random.toFixed(1))
-}
-
-function scrollTo(index: number) {
-  // @ts-expect-error containerEl is actually a component not a HTMLElement
-  containerEl.value?.scrollToItem(index)
-}
 </script>
 <template>
-  <div class="grid h-screen items-center sm:grid-flow-col">
-    <div class="p-6" v-if="selectedPokemon">
+  <div class="grid h-[calc(100vh-48px)] items-center gap-6 sm:grid-flow-col">
+    <div class="p-6">
       <PokemonCard
         class="mx-auto w-full max-w-xs"
         :pokemon="selectedPokemon"
@@ -46,40 +36,35 @@ function scrollTo(index: number) {
     </div>
     <RecycleScroller
       ref="containerEl"
-      class="scroller h-full max-h-80 overflow-x-hidden overflow-y-auto rounded-xl bg-neutral-200 py-32 pl-4 dark:bg-neutral-800"
+      class="scroller relative h-full max-h-80 overflow-x-hidden overflow-y-auto rounded-xl bg-white py-4 pl-4 dark:bg-neutral-800"
       :items="pokemonStore.list"
       :item-size="56"
       key-field="number"
-      v-slot="{ item: pokemon, index }"
+      v-slot="{ item: pokemon }"
     >
-      <ZoomableItem
-        :container="containerEl"
-        @select="selectPokemon(pokemon)"
-        @click="scrollTo(index)"
-      >
+      <ZoomableItem :container="containerEl" @select="selectPokemon(pokemon)">
         <template #default="{ style, selected }">
           <div
             :class="[
-              'flex items-center gap-2 rounded-l-full transition-all select-none',
+              'flex items-center gap-2 rounded-l-full transition-colors select-none',
               {
-                'bg-blue-400/30 dark:bg-indigo-700/60': selected,
-                'cursor-pointer hover:bg-blue-200/30': !selected,
+                'bg-blue-400/30 inset-shadow-sm inset-shadow-white/80 dark:bg-indigo-700/60 dark:inset-shadow-white/20':
+                  selected,
               },
             ]"
             :style
           >
             <div
-              class="relative size-10 overflow-hidden rounded-full inset-shadow-sm inset-shadow-white dark:inset-shadow-neutral-300"
-              :style="`background-color: var(--color-poke-${pokemon.color})`"
+              class="relative size-10 overflow-hidden rounded-full inset-shadow-sm inset-shadow-neutral-800/60 dark:inset-shadow-neutral-300"
             >
               <div
-                class="absolute inset-0 size-full blur-lg"
+                class="absolute inset-0 size-full scale-75 rounded-full blur-sm"
                 :style="`background-color: var(--color-poke-${pokemon.color})`"
               ></div>
               <img
                 v-lazy="pokemon.sprite"
                 :alt="`${pokemon.formattedName} Sprite`"
-                class="absolute inset-0 size-full bg-white/50 bg-contain dark:bg-neutral-800/70"
+                class="absolute inset-0 size-full bg-white/50 bg-contain dark:bg-neutral-800/40"
               />
             </div>
             <div :class="['grid']">

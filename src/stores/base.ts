@@ -8,13 +8,13 @@ export const useBaseStore = defineStore('base', () => {
   const types = useLocalStorage<IType[]>('pokedex/types', [])
   const colors = useLocalStorage<IType[]>('pokedex/colors', [])
   async function getTypes() {
+    if (types.value.length) return
     const data = await getTypeList()
-    console.log('types :>> ', data)
     types.value = data
   }
   async function getColors() {
+    if (types.value.length) return
     const data = await getColorList()
-    console.log('colors :>> ', data)
     colors.value = data
   }
   return { types, colors, getTypes, getColors }
