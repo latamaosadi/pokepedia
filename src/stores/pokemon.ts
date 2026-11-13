@@ -1,33 +1,51 @@
 import { getPokemonList } from '@/services/pokemon'
+import getColorList from '@/services/color'
+import getTypeList from '@/services/type'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { useBaseStore } from './base'
 import type { IPokemon } from '@/types/pokemon'
 import { useLocalStorage } from '@vueuse/core'
 
+// Bump the version when the cached shape or mapping changes.
+const CACHE_KEY = 'pokedex/v2/pokemon'
+const LEGACY_KEYS = ['pokedex/pokemon', 'pokedex/types', 'pokedex/colors']
+
 export const usePokemonStore = defineStore('pokemon', () => {
-  // const list = ref<IPokemon[]>([])
-  const list = useLocalStorage<IPokemon[]>('pokedex/pokemon', [])
+  try {
+    LEGACY_KEYS.forEach((key) => localStorage.removeItem(key))
+  } catch {}
 
-  async function getList() {
-    const baseStore = useBaseStore()
-    await Promise.all([baseStore.getTypes(), baseStore.getColors()])
+  const list = useLocalStorage<IPokemon[]>(CACHE_KEY, [])
+  const error = ref<Error | null>(null)
+  let pending: Promise<void> | null = null
 
-    if (list.value.length) return
-    const data = await getPokemonList()
-
-    data.forEach((pokemon, index) => {
-      const types = baseStore.types.filter((type) =>
-        type.pokemon?.includes(pokemon.number),
-      )
-      const color = baseStore.colors.find((color) =>
-        color.pokemon?.includes(pokemon.number),
-      )?.name
-      data[index].types = types
-      data[index].color = color
-    })
+  async function fetchList() {
+    const [data, types, colors] = await Promise.all([
+      getPokemonList(),
+      getTypeList(),
+      getColorList(),
+    ])
+    for (const pokemon of data) {
+      pokemon.types = types
+        .filter((type) => type.pokemon?.includes(pokemon.number))
+        .map(({ name }) => ({ name }))
+      pokemon.color = colors.find((color) => color.pokemon?.includes(pokemon.number))?.name
+    }
     list.value = data
   }
 
-  return { list, getList }
+  function getList() {
+    if (list.value.length) return Promise.resolve()
+    error.value = null
+    pending ??= fetchList()
+      .catch((e) => {
+        error.value = e
+      })
+      .finally(() => {
+        pending = null
+      })
+    return pending
+  }
+
+  return { list, error, getList }
 })

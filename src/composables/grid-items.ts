@@ -8,9 +8,9 @@ interface IGridItems {
   items: IPokemon[]
 }
 const breakpoints = useBreakpoints(breakpointsTailwind)
-const pokemonStore = usePokemonStore()
 
 export function useGridItems(gridSizes: Record<string, number>) {
+  const pokemonStore = usePokemonStore()
   const data = computed(() => {
     let columns = gridSizes.md
     if (breakpoints.smaller('sm').value) {
@@ -30,17 +30,9 @@ export function useGridItems(gridSizes: Record<string, number>) {
     if (!columns) columns = gridSizes[Object.keys(gridSizes)[Object.keys(gridSizes).length - 1]]
 
     return pokemonStore.list.reduce((acc, pokemon, index) => {
-      if ((index + 1) % columns < columns) {
-        const rowIndex = Math.floor(index / columns)
-        if (!acc[rowIndex]) {
-          acc[rowIndex] = {
-            id: rowIndex,
-            items: [pokemon],
-          }
-        } else {
-          acc[rowIndex].items = [...acc[rowIndex].items, pokemon]
-        }
-      }
+      const rowIndex = Math.floor(index / columns)
+      acc[rowIndex] ??= { id: rowIndex, items: [] }
+      acc[rowIndex].items.push(pokemon)
       return acc
     }, [] as IGridItems[])
   })

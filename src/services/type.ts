@@ -1,4 +1,5 @@
 import { type IType } from '@/types/pokemon'
+import { getJson } from './api'
 
 const getTypeList = async (): Promise<IType[]> => {
   const totalTypes = 18
@@ -7,8 +8,7 @@ const getTypeList = async (): Promise<IType[]> => {
 
   return await Promise.all(
     [...Array(totalTypes)].map(async (_value, index) => {
-      const response = await fetch(`https://pokeapi.co/api/v2/type/${index + 1}`)
-      const data = await response.json()
+      const data = await getJson(`https://pokeapi.co/api/v2/type/${index + 1}`)
       return {
         name: data.name,
         pokemon: data.pokemon.map(({ pokemon }: { pokemon: { url: string } }) => {

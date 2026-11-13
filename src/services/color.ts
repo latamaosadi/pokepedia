@@ -1,4 +1,5 @@
-import { type IType, type PokemonType } from '@/types/pokemon'
+import { type IType } from '@/types/pokemon'
+import { getJson } from './api'
 
 const getColorList = async (): Promise<IType[]> => {
   const totalColors = 10
@@ -7,8 +8,7 @@ const getColorList = async (): Promise<IType[]> => {
 
   return Promise.all(
     [...Array(totalColors)].map(async (_value, index) => {
-      const response = await fetch(`https://pokeapi.co/api/v2/pokemon-color/${index + 1}`)
-      const data = await response.json()
+      const data = await getJson(`https://pokeapi.co/api/v2/pokemon-color/${index + 1}`)
       return {
         name: data.name,
         pokemon: data.pokemon_species.map((pokemon: { url: string }) => {

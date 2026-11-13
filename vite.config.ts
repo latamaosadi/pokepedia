@@ -18,12 +18,16 @@ const pwaOptions: Partial<VitePWAOptions> = {
   registerType: 'autoUpdate',
   pwaAssets: { image: 'public/logo.svg' },
   workbox: {
-    globPatterns: ['**/*.{js,css,png,svg,ico,woff,woff2}'],
-    navigateFallback: undefined,
+    globPatterns: ['**/*.{html,js,css,png,svg,ico,woff,woff2}'],
     runtimeCaching: [
       {
         urlPattern: /^https:\/\/raw\.githubusercontent\.com\/.*/i,
         handler: 'CacheFirst',
+      },
+      {
+        urlPattern: /^https:\/\/pokeapi\.co\/api\/.*/i,
+        handler: 'StaleWhileRevalidate',
+        options: { cacheName: 'pokeapi', expiration: { maxEntries: 1000 } },
       },
     ],
   },
