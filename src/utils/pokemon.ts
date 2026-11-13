@@ -38,11 +38,6 @@ export function formatFormName(name: string, speciesName: string) {
     name = 'hisuian-' + speciesName
   } else if (name.indexOf('-gmax') !== -1) {
     name = 'gigantamax-' + speciesName
-  } else {
-    // Rest Species
-    // const re = '(' + speciesName + ')[-]([a-z]*)'
-    // const regExp = new RegExp(re, 'g')
-    // name = name.replace(regExp, '$2')
   }
   return titleCase(name)
 }

@@ -13,6 +13,11 @@ const router = createRouter({
       name: 'dex',
       component: () => import('../views/PokedexView.vue'),
     },
+    {
+      path: '/dex/:id',
+      name: 'dex.detail',
+      component: () => import('../views/PokemonDetailView.vue'),
+    },
   ],
 })
 

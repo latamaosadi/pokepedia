@@ -1,5 +1,3 @@
-import { type RemovableRef } from '@vueuse/core'
-
 export enum PokemonTypeEnum {
   Normal = 'normal',
   Fighting = 'fighting',
@@ -24,43 +22,6 @@ export enum PokemonTypeEnum {
 }
 export type PokemonType = `${PokemonTypeEnum}`
 
-export enum EvolutionMethodEnum {
-  UseItem = 'use-item',
-  LevelUp = 'level-up',
-  Trade = 'trade',
-  Shed = 'shed',
-  Spin = 'spin',
-  TowerOfDarkness = 'tower-of-darkness',
-  TowerOfWater = 'tower-of-water',
-  ThreeCriticalHits = 'three-critical-hits',
-  TakeDamage = 'take-damage',
-  Other = 'other',
-  AgileStyleMove = 'agile-style-move',
-  StrongStyleMove = 'strong-style-move',
-  RecoilDamage = 'recoil-damage',
-}
-export type EvolutionMethod = `${EvolutionMethodEnum}`
-
-export enum DamageClassEnum {
-  Status = 'status',
-  Physical = 'physical',
-  Special = 'special',
-}
-export type DamageClass = `${DamageClassEnum}`
-
-export enum RegionEnum {
-  All = 'all',
-  Kanto = 'kanto',
-  Johto = 'johto',
-  Hoenn = 'hoenn',
-  Sinnoh = 'sinnoh',
-  Unova = 'unova',
-  Kalos = 'kalos',
-  Alola = 'alola',
-  Galar = 'galar',
-  Paldea = 'paldea',
-}
-
 export interface INamedResource {
   name: string
   url?: string
@@ -70,65 +31,6 @@ export interface IType {
   name: PokemonType
   id?: number
   pokemon?: number[]
-}
-
-export interface IForm {
-  id: number
-  name: string
-  value: string
-  sprite?: string
-  artwork?: string
-  height?: string
-  weight?: string
-  types?: IType[]
-}
-
-export interface IItem {
-  id: string
-  name: string
-  description: string
-  type: string
-  sprite?: string
-}
-
-export interface IPokemonSpecies {
-  id: number
-  name: string
-  formattedName: string
-  pokedexNumber: number
-  isBaby: boolean
-  isLegendary: boolean
-  isMythical: boolean
-  genus: string
-  color: string
-  description: string
-  evolutionUrl: string
-  varietiesUrl: string[]
-}
-
-export interface IMove {
-  name: string
-  id: number
-  accuracy: number
-  pp: number
-  power: number
-  type: IType
-  damageClass: DamageClass
-}
-
-export interface IEvolutionDetail {
-  method: EvolutionMethod
-  minHappiness?: number
-  minLevel?: number
-  heldItem?: string
-  item?: IItem | null
-  location?: string
-  timeOfDay?: string
-}
-
-export interface IEvolutionChain extends IPokemon {
-  evolutionDetail: IEvolutionDetail
-  evolvesTo: IEvolutionChain[]
 }
 
 export interface IPokemon {
@@ -141,26 +43,29 @@ export interface IPokemon {
   types?: IType[]
 }
 
-export interface IPokemonInfo extends IPokemon {
-  animatedSprite: string | null
-  moves: IMove[]
-  evolutionChain: IEvolutionChain
+export interface IForm {
+  id: number
+  name: string
+  types: IType[]
+  height: string
+  weight: string
+  sprite: string
+  artwork: string
+}
+
+export interface IEvolutionChain extends IPokemon {
+  requirement?: string
+  itemSprite?: string
+  evolvesTo: IEvolutionChain[]
+}
+
+export interface IPokemonInfo {
+  name: string
+  formattedName: string
+  number: number
+  color: string
   genus: string
   description: string
-  height?: string
-  weight?: string
   forms: IForm[]
-  species: IPokemonSpecies
-}
-
-export interface IPokemonList {
-  pageSize: number
-  page: number
-  data: IPokemon[]
-  loading: boolean
-}
-
-export interface IBaseList {
-  types: IType[] | RemovableRef<[]>
-  colors: IType[] | RemovableRef<[]>
+  evolutionChain: IEvolutionChain | null
 }

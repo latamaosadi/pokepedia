@@ -48,11 +48,14 @@ const gridItems = useGridItems(gridSizes)
         <div
           class="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-6"
         >
-          <PokemonCard
+          <RouterLink
             v-for="pokemon in row.items"
             :key="pokemon.number"
-            :pokemon="pokemon"
-          />
+            :to="{ name: 'dex.detail', params: { id: pokemon.name } }"
+            class="rounded-[0.75em] outline-none focus-visible:ring-4 focus-visible:ring-blue-400"
+          >
+            <PokemonCard :pokemon="pokemon" />
+          </RouterLink>
         </div>
       </template>
     </RecycleScroller>
