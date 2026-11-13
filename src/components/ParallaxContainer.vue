@@ -1,41 +1,19 @@
 <script setup lang="ts">
-import { useMouseInElement, useParallax } from '@vueuse/core'
-import { computed, reactive, ref } from 'vue'
+import { computed } from 'vue'
 
-const {
-  interactive = true,
-  tilt: defaultTilt = 0,
-  roll: defaultRoll = 0,
-} = defineProps<{
-  interactive?: boolean
+const { tilt = 0, roll = 0 } = defineProps<{
   tilt?: number
   roll?: number
 }>()
-const target = ref(null)
 
-const { isOutside } = useMouseInElement(target)
-
-const parallax = reactive(useParallax(target))
-
-const isDesktop = computed(() => isOutside.value)
-
-const cardStyle = computed(() => {
-  const rotateX = !interactive ? defaultRoll : isDesktop.value ? 0 : parallax.roll
-  const rotateY = !interactive ? defaultTilt : isDesktop.value ? 0 : parallax.tilt
-  const rotateZ = !interactive
-    ? defaultTilt * (defaultRoll * -1)
-    : isDesktop.value
-      ? 0
-      : parallax.tilt * (parallax.roll * -1)
-  return {
-    transition: '.3s ease-out all',
-    transform: `rotateX(${rotateX * 20}deg) rotateY(${rotateY * 20}deg) rotateZ(${rotateZ * 10}deg)`,
-  }
-})
+const cardStyle = computed(() => ({
+  transition: '.3s ease-out all',
+  transform: `rotateX(${roll * 20}deg) rotateY(${tilt * 20}deg) rotateZ(${tilt * -roll * 10}deg)`,
+}))
 </script>
 
 <template>
-  <div ref="target" class="perspective-midrange">
+  <div class="perspective-midrange">
     <div :style="cardStyle">
       <slot />
     </div>

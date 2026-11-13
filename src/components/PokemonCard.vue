@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { useElementSize, useMouseInElement } from '@vueuse/core'
+import { useElementSize, useMouseInElement, usePreferredReducedMotion } from '@vueuse/core'
 import ParallaxContainer from './ParallaxContainer.vue'
 import { computed, ref, type CSSProperties } from 'vue'
 import type { IPokemon } from '@/types/pokemon'
@@ -22,7 +22,19 @@ const { isOutside, elementX, elementY, elementWidth, elementHeight } =
   useMouseInElement(target)
 const { width } = useElementSize(target)
 
+const reducedMotion = usePreferredReducedMotion()
+const loadedSrc = ref<string>()
+
 const cardActive = computed(() => !interactive || !isOutside.value)
+const followMouse = computed(
+  () => interactive && !isOutside.value && reducedMotion.value !== 'reduce',
+)
+const cardTilt = computed(() =>
+  !interactive ? defaultTilt : followMouse.value ? elementX.value / elementWidth.value - 0.5 : 0,
+)
+const cardRoll = computed(() =>
+  !interactive ? defaultRoll : followMouse.value ? 0.5 - elementY.value / elementHeight.value : 0,
+)
 
 const backgroundStyle = computed((): CSSProperties => {
   return {
@@ -72,7 +84,7 @@ const orb2Style = computed((): CSSProperties => {
 </script>
 
 <template>
-  <ParallaxContainer class="group" ref="target" :interactive :tilt :roll>
+  <ParallaxContainer class="group" ref="target" :tilt="cardTilt" :roll="cardRoll">
     <div
       :class="[
         'relative aspect-[3/4] overflow-hidden rounded-[0.75em] p-2 text-center',
@@ -119,19 +131,15 @@ const orb2Style = computed((): CSSProperties => {
       </div>
       <img
         :class="[
-          'absolute inset-0 mx-auto size-full rounded-xl object-contain object-center drop-shadow-lg transition-all duration-300',
-          { 'scale-125': cardActive },
+          'absolute inset-0 mx-auto size-full rounded-xl object-contain object-center drop-shadow-lg transition-all duration-300 motion-reduce:transition-none',
+          { 'scale-125': cardActive, 'opacity-0': loadedSrc !== pokemon?.artwork },
         ]"
+        :key="pokemon?.artwork"
+        :src="pokemon?.artwork"
         :alt="`${pokemon?.formattedName} Card`"
-        v-lazy="pokemon?.artwork"
+        loading="lazy"
+        @load="loadedSrc = pokemon?.artwork"
       />
     </div>
   </ParallaxContainer>
 </template>
-
-<style>
-img[lazy='loading'] {
-  opacity: 0.4;
-  filter: blur(2px);
-}
-</style>
