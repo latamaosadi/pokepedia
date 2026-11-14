@@ -77,7 +77,7 @@ watch(id, (value) => value && load(value), { immediate: true })
     <p v-else-if="!info" class="font-pixel text-2xl" aria-busy="true">Loading…</p>
 
     <div v-else class="grid items-start gap-8 md:grid-cols-[minmax(0,20rem)_1fr]">
-      <PokemonCard :pokemon="card" class="mx-auto w-full max-w-xs" />
+      <PokemonCard :pokemon="card" gyro class="mx-auto w-full max-w-xs" />
 
       <div class="space-y-6">
         <header>
