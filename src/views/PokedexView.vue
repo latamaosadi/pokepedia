@@ -1,3 +1,8 @@
+<script lang="ts">
+// Kept outside the component so it survives leaving and re-entering the view.
+let savedScrollTop = 0
+</script>
+
 <script lang="ts" setup>
 import PokemonCard from '@/components/PokemonCard.vue'
 import ZoomableItem from '@/components/Zoomable/ZoomableItem.vue'
@@ -5,7 +10,7 @@ import { usePokemonStore } from '@/stores/pokemon'
 import type { IPokemon } from '@/types/pokemon'
 import { padNumber } from '@/utils/string'
 import { useDebounceFn } from '@vueuse/core'
-import { onMounted, ref } from 'vue'
+import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { RecycleScroller } from 'vue-virtual-scroller'
 import 'vue-virtual-scroller/dist/vue-virtual-scroller.css'
@@ -26,8 +31,18 @@ const selectPokemon = useDebounceFn((pokemon: IPokemon) => {
   selectedPokemon.value = pokemon
 }, 500)
 
+// containerEl holds the RecycleScroller component; its root element is what scrolls.
+const scrollerEl = () => (containerEl.value as unknown as { $el?: HTMLElement } | null)?.$el
+
 onMounted(async () => {
   await pokemonStore.getList()
+  await nextTick()
+  const el = scrollerEl()
+  if (el) el.scrollTop = savedScrollTop
+})
+
+onBeforeUnmount(() => {
+  savedScrollTop = scrollerEl()?.scrollTop ?? savedScrollTop
 })
 </script>
 <template>
