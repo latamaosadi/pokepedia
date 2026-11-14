@@ -115,16 +115,14 @@ const cardVars = computed(() => {
             {{ pokemon?.formattedName }}
           </h2>
         </div>
-        <div class="absolute inset-x-0 bottom-0 px-2">
+        <div class="absolute inset-x-0 bottom-0 flex items-end justify-between gap-1 px-2">
           <h2
-            class="font-inter text-left font-black text-white drop-shadow-sm"
+            class="font-inter shrink-0 text-left font-black text-white drop-shadow-sm"
             :style="`font-size: ${width / 7.5}px;`"
           >
             #{{ pokemon?.number }}
           </h2>
-        </div>
-        <div class="absolute right-0 bottom-0 p-2">
-          <TypeBadge :types="pokemon?.types || []" class="justify-center" />
+          <TypeBadge :types="pokemon?.types || []" class="mb-2 flex-wrap justify-end" />
         </div>
         <img
           :class="[
