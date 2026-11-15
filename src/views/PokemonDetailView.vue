@@ -26,6 +26,7 @@ import EvolutionChain from '@/components/EvolutionChain.vue'
 import PokemonCard from '@/components/PokemonCard.vue'
 import ShinyToggle from '@/components/ShinyToggle.vue'
 import TypeBadge from '@/components/TypeBadge.vue'
+import { lastListView } from '@/router'
 import { usePokemonStore } from '@/stores/pokemon'
 import type { IPokemon, IPokemonInfo, PokemonType } from '@/types/pokemon'
 import { artwork, defaultSprite } from '@/utils/sprite'
@@ -394,10 +395,10 @@ watch(id, (value) => value && load(value), { immediate: true })
       aria-label="Pokémon navigation"
     >
       <RouterLink
-        to="/"
+        :to="{ name: lastListView }"
         class="shrink-0 rounded font-bold whitespace-nowrap outline-none hover:underline focus-visible:ring-4 focus-visible:ring-blue-400"
       >
-        ← All Pokémon
+        {{ lastListView === 'dex' ? '← Pokédex' : '← All Pokémon' }}
       </RouterLink>
       <div class="flex gap-2">
         <RouterLink

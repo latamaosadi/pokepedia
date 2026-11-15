@@ -1,8 +1,12 @@
+import { ref } from 'vue'
 import { createRouter, createWebHistory } from 'vue-router'
 
 // Last scroll position of the home grid, so coming back via the
 // "All Pokémon" link (not just the browser's back button) lands where you left.
 let homeScrollTop = 0
+
+// The list view a detail page was opened from, so its back link returns there.
+export const lastListView = ref<'home' | 'dex'>('home')
 
 // The virtual grid only gets its full height after measuring a card, so wait
 // until the page can actually scroll that far before restoring.
@@ -46,6 +50,7 @@ const router = createRouter({
 
 router.beforeEach((_to, from) => {
   if (from.name === 'home') homeScrollTop = window.scrollY
+  if (from.name === 'home' || from.name === 'dex') lastListView.value = from.name
 })
 
 export default router
