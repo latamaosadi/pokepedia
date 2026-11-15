@@ -2,8 +2,10 @@ import { getPokemonList } from '@/services/pokemon'
 import getColorList from '@/services/color'
 import getTypeList from '@/services/type'
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
-import type { IPokemon } from '@/types/pokemon'
+import { computed, ref } from 'vue'
+import type { IPokemon, PokemonType } from '@/types/pokemon'
+import { matchesFilter } from '@/utils/pokemon'
+import { artwork, defaultSprite } from '@/utils/sprite'
 import { useLocalStorage } from '@vueuse/core'
 
 // Bump the version when the cached shape or mapping changes.
@@ -17,6 +19,28 @@ export const usePokemonStore = defineStore('pokemon', () => {
 
   const list = useLocalStorage<IPokemon[]>(CACHE_KEY, [])
   const error = ref<Error | null>(null)
+  // Shared by the home grid and the Pokédex so the filter survives switching views.
+  const query = ref('')
+  const type = ref<PokemonType | ''>('')
+  // App-wide shiny switch, remembered across visits.
+  const shiny = useLocalStorage('pokedex/shiny', false)
+  // The list as shown: filtered, with shiny art swapped in when the switch is on.
+  const filtered = computed(() =>
+    list.value
+      .filter((pokemon) => matchesFilter(pokemon, query.value, type.value))
+      .map((pokemon) =>
+        shiny.value
+          ? {
+              ...pokemon,
+              sprite: defaultSprite(pokemon.number, true),
+              artwork: artwork(pokemon.number, true),
+            }
+          : pokemon,
+      ),
+  )
+  // Changes with the filter. Virtual lists key on it to remount, so rows recycled from
+  // a longer list don't linger off-screen where Tab and screen readers still reach them.
+  const filterKey = computed(() => `${query.value}|${type.value}`)
   let pending: Promise<void> | null = null
 
   async function fetchList() {
@@ -47,5 +71,5 @@ export const usePokemonStore = defineStore('pokemon', () => {
     return pending
   }
 
-  return { list, error, getList }
+  return { list, filtered, filterKey, query, type, shiny, error, getList }
 })

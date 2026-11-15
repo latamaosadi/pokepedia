@@ -30,6 +30,15 @@ const responses: Record<string, unknown> = {
     height: 17,
     weight: 905,
     types: [{ type: ref('fire') }, { type: ref('flying') }],
+    stats: [
+      { base_stat: 78, stat: ref('hp') },
+      { base_stat: 109, stat: ref('special-attack') },
+    ],
+    abilities: [
+      { is_hidden: false, ability: ref('blaze') },
+      { is_hidden: true, ability: ref('solar-power') },
+    ],
+    cries: { latest: 'https://example.test/6.ogg', legacy: null },
   },
   [`${API}/pokemon/10034/`]: {
     id: 10034,
@@ -37,6 +46,9 @@ const responses: Record<string, unknown> = {
     height: 17,
     weight: 1105,
     types: [{ type: ref('fire') }, { type: ref('dragon') }],
+    stats: [{ base_stat: 78, stat: ref('hp') }],
+    abilities: [{ is_hidden: false, ability: ref('tough-claws') }],
+    cries: { latest: null, legacy: null },
   },
   [`${API}/evolution-chain/2/`]: {
     chain: {
@@ -84,6 +96,18 @@ describe('getPokemonInfo', () => {
         { name: 'Charizard', types: [{ name: 'fire' }, { name: 'flying' }], height: '1.7 m', weight: '90.5 kg' },
         { name: 'Mega Charizard X', types: [{ name: 'fire' }, { name: 'dragon' }], height: '1.7 m', weight: '110.5 kg' },
       ])
+    expect(info.forms[0]).toMatchObject({
+      stats: [
+        { name: 'HP', value: 78 },
+        { name: 'Sp. Atk', value: 109 },
+      ],
+      abilities: [
+        { name: 'Blaze', hidden: false },
+        { name: 'Solar Power', hidden: true },
+      ],
+      cry: 'https://example.test/6.ogg',
+    })
+    expect(info.forms[1].cry).toBeUndefined()
 
     const chain = info.evolutionChain!
     const charmeleon = chain.evolvesTo[0]

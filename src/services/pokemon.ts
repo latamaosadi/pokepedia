@@ -12,6 +12,15 @@ import { getJson } from './api'
 
 const API = 'https://pokeapi.co/api/v2'
 
+const STAT_LABELS: Record<string, string> = {
+  hp: 'HP',
+  attack: 'Attack',
+  defense: 'Defense',
+  'special-attack': 'Sp. Atk',
+  'special-defense': 'Sp. Def',
+  speed: 'Speed',
+}
+
 // Varieties that are battle-only or duplicates of another entry.
 const HIDDEN_FORMS = ['totem', '-meteor', 'koraidon-', 'miraidon-']
 
@@ -83,6 +92,15 @@ async function getForm(url: string, speciesName: string): Promise<IForm> {
     weight: `${pokemon.weight / 10} kg`,
     sprite: defaultSprite(pokemon.id),
     artwork: artwork(pokemon.id),
+    stats: pokemon.stats.map((slot: Raw) => ({
+      name: STAT_LABELS[slot.stat.name] ?? titleCase(slot.stat.name),
+      value: slot.base_stat,
+    })),
+    abilities: pokemon.abilities.map((slot: Raw) => ({
+      name: titleCase(slot.ability.name),
+      hidden: slot.is_hidden,
+    })),
+    cry: pokemon.cries?.latest || pokemon.cries?.legacy || undefined,
   }
 }
 

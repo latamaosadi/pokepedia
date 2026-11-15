@@ -43,6 +43,16 @@ export interface IPokemon {
   types?: IType[]
 }
 
+export interface IStat {
+  name: string
+  value: number
+}
+
+export interface IAbility {
+  name: string
+  hidden: boolean
+}
+
 export interface IForm {
   id: number
   name: string
@@ -51,6 +61,9 @@ export interface IForm {
   weight: string
   sprite: string
   artwork: string
+  stats: IStat[]
+  abilities: IAbility[]
+  cry?: string
 }
 
 export interface IEvolutionChain extends IPokemon {

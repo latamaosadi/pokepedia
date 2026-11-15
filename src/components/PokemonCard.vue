@@ -18,6 +18,7 @@ const {
   tilt = 0,
   roll = 0,
   gyro = false,
+  shiny = false,
 } = defineProps<{
   pokemon?: IPokemon
   interactive?: boolean
@@ -25,6 +26,8 @@ const {
   roll?: number
   /** Tilt with the device's motion sensor (phones). */
   gyro?: boolean
+  /** Gold, sparkling background for shiny artwork. */
+  shiny?: boolean
 }>()
 
 const target = ref(null)
@@ -158,14 +161,15 @@ const cardVars = computed(() => {
 <template>
   <div ref="target" class="group perspective-midrange">
     <div
-      :class="['card relative aspect-[3/4] rounded-[0.75em]', { 'z-30': hovered }]"
-      :style="[cardVars, `--card-color: var(--color-poke-${pokemon?.color})`]"
+      :class="['card relative aspect-[3/4] rounded-[0.75em]', { 'z-30': hovered, 'card-shiny': shiny }]"
+      :style="[cardVars, shiny ? '' : `--card-color: var(--color-poke-${pokemon?.color})`]"
     >
       <div
         class="card-face absolute inset-0 overflow-hidden rounded-[inherit] bg-(--card-color)"
       >
-        <div class="absolute inset-0 bg-white/40"></div>
+        <div v-if="!shiny" class="absolute inset-0 bg-white/40"></div>
         <div class="card-pattern absolute inset-0"></div>
+        <div v-if="shiny" class="card-sparkles absolute inset-0"></div>
         <div class="card-orb absolute"></div>
         <div class="card-holo absolute inset-0"></div>
         <div class="card-glare absolute inset-0"></div>
@@ -220,6 +224,45 @@ const cardVars = computed(() => {
 
 .card-face {
   filter: saturate(calc(1 + var(--lift) * 0.3));
+}
+
+.card-shiny {
+  --card-color: #d4a017;
+}
+
+.card-shiny .card-face {
+  background: linear-gradient(135deg, #e3b23c 0%, #a87908 35%, #d9a92e 55%, #7a5a06 80%, #c9971f 100%);
+}
+
+/* Star field that drifts against the tilt and twinkles. */
+.card-sparkles {
+  background-image:
+    radial-gradient(circle at 18% 22%, #fff 0 1.5px, transparent 2.5px),
+    radial-gradient(circle at 62% 12%, #fff 0 1px, transparent 2px),
+    radial-gradient(circle at 82% 48%, #fff 0 2px, transparent 3px),
+    radial-gradient(circle at 34% 68%, #fff 0 1px, transparent 2px),
+    radial-gradient(circle at 74% 84%, #fff 0 1.5px, transparent 2.5px),
+    radial-gradient(circle at 8% 90%, #fff 0 1px, transparent 2px);
+  background-size: 50% 35%;
+  background-position: calc(var(--dx) * -30px) calc(var(--dy) * -30px);
+  mix-blend-mode: screen;
+  animation: twinkle 1.8s ease-in-out infinite alternate;
+}
+
+@keyframes twinkle {
+  from {
+    opacity: 0.35;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card-sparkles {
+    animation: none;
+    opacity: 0.7;
+  }
 }
 
 .card-pattern {

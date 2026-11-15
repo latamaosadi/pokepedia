@@ -4,6 +4,7 @@ let savedScrollTop = 0
 </script>
 
 <script lang="ts" setup>
+import ListFilter from '@/components/ListFilter.vue'
 import PokemonCard from '@/components/PokemonCard.vue'
 import { usePokemonStore } from '@/stores/pokemon'
 import type { IPokemon } from '@/types/pokemon'
@@ -45,7 +46,7 @@ const { y: scrollTop } = useScroll(scrollerEl)
 const { height: viewHeight } = useElementSize(scrollerEl, undefined, { box: 'border-box' })
 const geometry = computed(() => ({
   itemSize: ITEM_SIZE,
-  count: pokemonStore.list.length,
+  count: pokemonStore.filtered.length,
   viewHeight: viewHeight.value,
   padding: LIST_PADDING,
 }))
@@ -53,7 +54,7 @@ const selectedIndex = computed(() => dexScroll.selectedIndex(geometry.value, scr
 // Invisible markers at these offsets are the snap targets; unlike the rows they're
 // never virtualized away, so long jumps (End, restoring the position) still snap.
 const snapPoints = computed(() =>
-  pokemonStore.list.map((_, index) => dexScroll.snapPoint(geometry.value, index)),
+  pokemonStore.filtered.map((_, index) => dexScroll.snapPoint(geometry.value, index)),
 )
 
 function rowStyle(index: number): CSSProperties {
@@ -67,13 +68,16 @@ function rowStyle(index: number): CSSProperties {
 }
 
 watch(
-  [selectedIndex, () => pokemonStore.list.length],
-  ([index]) => {
-    const pokemon = pokemonStore.list[index]
-    if (pokemon) selectPokemon(pokemon)
-  },
+  () => pokemonStore.filtered[selectedIndex.value],
+  (pokemon) => pokemon && selectPokemon(pokemon),
   { immediate: true },
 )
+
+// A new filter means a new list; start it from the top.
+watch([() => pokemonStore.query, () => pokemonStore.type], () => {
+  const el = scrollerEl()
+  if (el) el.scrollTop = 0
+})
 
 onMounted(async () => {
   await pokemonStore.getList()
@@ -97,72 +101,89 @@ onBeforeUnmount(() => {
         :to="{ name: 'dex.detail', params: { id: selectedPokemon.name } }"
         class="mx-auto block w-full max-w-xs rounded-[0.75em] outline-none focus-visible:ring-4 focus-visible:ring-blue-400"
       >
-        <PokemonCard :pokemon="selectedPokemon" :interactive="false" :tilt :roll />
+        <PokemonCard
+          :pokemon="selectedPokemon"
+          :shiny="pokemonStore.shiny"
+          :interactive="false"
+          :tilt
+          :roll
+        />
       </RouterLink>
       <PokemonCard v-else class="mx-auto w-full max-w-xs" :interactive="false" :tilt :roll />
     </div>
-    <RecycleScroller
-      ref="containerEl"
-      tabindex="0"
-      aria-label="Pokémon list, use arrow keys to browse and Enter to open"
-      @keydown.enter="openSelected"
-      class="scroller relative h-full max-h-80 snap-y snap-mandatory overflow-x-hidden overflow-y-auto rounded-xl bg-white py-4 pl-4 outline-none focus-visible:ring-4 focus-visible:ring-blue-400 dark:bg-neutral-800"
-      :items="pokemonStore.list"
-      :item-size="ITEM_SIZE"
-      key-field="number"
-    >
-      <template #before>
-        <div aria-hidden="true" class="pointer-events-none absolute top-0 left-0 w-px">
-          <div
-            v-for="(top, index) in snapPoints"
-            :key="index"
-            class="absolute h-px w-px snap-start"
-            :style="{ top: `${top}px` }"
-          ></div>
-        </div>
-      </template>
-      <template #default="{ item: pokemon, index }">
-        <div class="flex h-14 items-center">
-          <div
-            :class="[
-              'flex grow items-center gap-2 rounded-l-full transition-colors select-none',
-              {
-                'bg-blue-400/30 inset-shadow-sm inset-shadow-white/80 dark:bg-indigo-700/60 dark:inset-shadow-white/20':
-                  index === selectedIndex,
-              },
-            ]"
-            :style="rowStyle(index)"
-          >
+    <div class="flex flex-col gap-3">
+      <ListFilter />
+      <p
+        v-if="pokemonStore.list.length && !pokemonStore.filtered.length"
+        class="font-pixel py-6 text-center text-xl text-neutral-500 dark:text-neutral-400"
+      >
+        No Pokémon match your search.
+      </p>
+      <RecycleScroller
+        :key="pokemonStore.filterKey"
+        v-show="pokemonStore.filtered.length"
+        ref="containerEl"
+        tabindex="0"
+        aria-label="Pokémon list, use arrow keys to browse and Enter to open"
+        @keydown.enter="openSelected"
+        class="scroller relative h-full max-h-80 snap-y snap-mandatory overflow-x-hidden overflow-y-auto rounded-xl bg-white py-4 pl-4 outline-none focus-visible:ring-4 focus-visible:ring-blue-400 dark:bg-neutral-800"
+        :items="pokemonStore.filtered"
+        :item-size="ITEM_SIZE"
+        key-field="number"
+      >
+        <template #before>
+          <div aria-hidden="true" class="pointer-events-none absolute top-0 left-0 w-px">
             <div
-              class="relative size-10 overflow-hidden rounded-full inset-shadow-sm inset-shadow-neutral-800/60 dark:inset-shadow-neutral-300"
+              v-for="(top, index) in snapPoints"
+              :key="index"
+              class="absolute h-px w-px snap-start"
+              :style="{ top: `${top}px` }"
+            ></div>
+          </div>
+        </template>
+        <template #default="{ item: pokemon, index }">
+          <div class="flex h-14 items-center">
+            <div
+              :class="[
+                'flex grow items-center gap-2 rounded-l-full transition-colors select-none',
+                {
+                  'bg-blue-400/30 inset-shadow-sm inset-shadow-white/80 dark:bg-indigo-700/60 dark:inset-shadow-white/20':
+                    index === selectedIndex,
+                },
+              ]"
+              :style="rowStyle(index)"
             >
               <div
-                class="absolute inset-0 size-full scale-75 rounded-full blur-sm"
-                :style="`background-color: var(--color-poke-${pokemon.color})`"
-              ></div>
-              <img
-                :key="pokemon.sprite"
-                :src="pokemon.sprite"
-                loading="lazy"
-                :alt="`${pokemon.formattedName} Sprite`"
-                class="absolute inset-0 size-full bg-white/50 bg-contain dark:bg-neutral-800/40"
-              />
-            </div>
-            <div :class="['grid']">
-              <h2
-                class="conde text-lg leading-tight font-bold text-neutral-800 dark:text-neutral-200"
+                class="relative size-10 overflow-hidden rounded-full inset-shadow-sm inset-shadow-neutral-800/60 dark:inset-shadow-neutral-300"
               >
-                {{ pokemon.formattedName }}
-              </h2>
-              <span
-                class="text-xs leading-none font-bold text-neutral-400 dark:text-neutral-500"
-                >#{{ padNumber(pokemon.number) }}</span
-              >
+                <div
+                  class="absolute inset-0 size-full scale-75 rounded-full blur-sm"
+                  :style="`background-color: var(--color-poke-${pokemon.color})`"
+                ></div>
+                <img
+                  :key="pokemon.sprite"
+                  :src="pokemon.sprite"
+                  loading="lazy"
+                  :alt="`${pokemon.formattedName} Sprite`"
+                  class="absolute inset-0 size-full bg-white/50 bg-contain dark:bg-neutral-800/40"
+                />
+              </div>
+              <div :class="['grid']">
+                <h2
+                  class="conde text-lg leading-tight font-bold text-neutral-800 dark:text-neutral-200"
+                >
+                  {{ pokemon.formattedName }}
+                </h2>
+                <span
+                  class="text-xs leading-none font-bold text-neutral-400 dark:text-neutral-500"
+                  >#{{ padNumber(pokemon.number) }}</span
+                >
+              </div>
             </div>
           </div>
-        </div>
-      </template>
-    </RecycleScroller>
+        </template>
+      </RecycleScroller>
+    </div>
   </div>
 </template>
 

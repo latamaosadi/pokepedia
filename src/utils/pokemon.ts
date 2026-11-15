@@ -1,3 +1,4 @@
+import type { IPokemon } from '@/types/pokemon'
 import { titleCase } from './string'
 
 export function formatFormName(name: string, speciesName: string) {
@@ -40,4 +41,16 @@ export function formatFormName(name: string, speciesName: string) {
     name = 'gigantamax-' + speciesName
   }
   return titleCase(name)
+}
+
+/**
+ * Search match on name or Pokédex number ("pika", "mr mime", "25", "#025"),
+ * optionally limited to one type.
+ */
+export function matchesFilter(pokemon: IPokemon, query: string, type: string) {
+  if (type && !pokemon.types?.some((t) => t.name === type)) return false
+  const q = query.trim().toLowerCase().replace(/^#0*/, '')
+  if (!q) return true
+  if (/^\d+$/.test(q)) return String(pokemon.number).startsWith(q)
+  return pokemon.formattedName.toLowerCase().includes(q) || pokemon.name.includes(q)
 }

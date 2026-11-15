@@ -65,6 +65,47 @@ describe('pokemon store', () => {
     expect(JSON.parse(localStorage.getItem('pokedex/v2/pokemon')!)).toEqual(store.list)
   })
 
+  test.each([
+    ['char', '', ['charmander']],
+    ['BULBA', '', ['bulbasaur']],
+    ['4', '', ['charmander']],
+    ['#001', '', ['bulbasaur']],
+    ['', 'grass', ['bulbasaur']],
+    ['', 'fire', ['charmander']],
+    ['bulba', 'fire', []],
+    ['  ', '', ['bulbasaur', 'charmander']],
+  ] as const)('filters by search %j and type %j', async (query, type, expected) => {
+    vi.stubGlobal('fetch', vi.fn(fakeApi()))
+    const store = usePokemonStore()
+    await store.getList()
+
+    store.query = query
+    store.type = type
+
+    expect(store.filtered.map((p) => p.name)).toEqual(expected)
+  })
+
+  test('the shiny switch shows shiny art without changing the cached list, and is remembered', async () => {
+    vi.stubGlobal('fetch', vi.fn(fakeApi()))
+    const store = usePokemonStore()
+    await store.getList()
+
+    store.shiny = true
+    await nextTick()
+
+    const sprites = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon'
+    expect(store.filtered[0]).toMatchObject({
+      name: 'bulbasaur',
+      sprite: `${sprites}/shiny/1.png`,
+      artwork: `${sprites}/other/official-artwork/shiny/1.png`,
+    })
+    expect(store.list[0].artwork).toBe(`${sprites}/other/official-artwork/1.png`)
+    expect(JSON.parse(localStorage.getItem('pokedex/v2/pokemon')!)[0].artwork).toBe(
+      `${sprites}/other/official-artwork/1.png`,
+    )
+    expect(localStorage.getItem('pokedex/shiny')).toBe('true')
+  })
+
   test('a failed request reports an error and caches nothing; retry recovers', async () => {
     vi.stubGlobal('fetch', vi.fn(fakeApi(`${API}/type/7`)))
     const store = usePokemonStore()

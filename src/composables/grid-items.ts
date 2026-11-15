@@ -29,7 +29,7 @@ export function useGridItems(gridSizes: Record<string, number>) {
 
     if (!columns) columns = gridSizes[Object.keys(gridSizes)[Object.keys(gridSizes).length - 1]]
 
-    return pokemonStore.list.reduce((acc, pokemon, index) => {
+    return pokemonStore.filtered.reduce((acc, pokemon, index) => {
       const rowIndex = Math.floor(index / columns)
       acc[rowIndex] ??= { id: rowIndex, items: [] }
       acc[rowIndex].items.push(pokemon)

@@ -1,7 +1,7 @@
 const baseUrl = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon'
 
-export function defaultSprite(id: string | number) {
-  return `${baseUrl}/${id}.png`
+export function defaultSprite(id: string | number, shiny = false) {
+  return shiny ? `${baseUrl}/shiny/${id}.png` : `${baseUrl}/${id}.png`
 }
 
 export function artwork(id: string | number, shiny = false) {

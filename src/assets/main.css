@@ -51,3 +51,12 @@
   --drop-shadow-solid-md: 2px 4px 0 rgba(0, 0, 0, 0.4);
   --drop-shadow-solid-lg: 6px 8px 0 rgba(0, 0, 0, 0.4);
 }
+
+/* Native select arrows sit against the edge and differ per browser; draw our own. */
+@utility select-chevron {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%23737373' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 8 4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 1.25rem;
+}
