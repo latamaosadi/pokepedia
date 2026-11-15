@@ -20,6 +20,14 @@ See [Vite Configuration Reference](https://vite.dev/config/).
 bun install
 ```
 
+### Update Pokémon Data
+
+The Pokémon list and type chart ship with the app in `src/data/`. Regenerate them from PokeAPI when new Pokémon are released:
+
+```sh
+bun run update-data
+```
+
 ### Compile and Hot-Reload for Development
 
 ```sh

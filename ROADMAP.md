@@ -11,17 +11,17 @@ Ideas for improving Poképedia, ranked by value against effort.
 
 ## Medium effort
 
-- [ ] **Ship the Pokémon list with the app.** A first visit sends 29 PokeAPI requests before anything shows. Generating the list as JSON at build time would make the first load instant and offline-ready, and remove the main way the app can fail.
-- [ ] **Type matchups.** Show weaknesses and resistances on the detail page. The `/type` responses the app fetches already include damage relations, but they're discarded.
-- [ ] **Favorites or a team builder.** Star Pokémon or build a team of 6, stored in `localStorage`.
-- [ ] **Faster Pokédex card.** The big card waits 500ms after the list settles before switching. With snapping in place, about 100ms should be enough.
+- [x] **Ship the Pokémon list with the app.** The list and type chart live in `src/data/` (regenerate with `bun run update-data`), so a first visit makes no API requests and works offline.
+- [x] **Type matchups.** The detail page shows damage taken from each type (4×, 2×, ½×, ¼×, 0×) for the selected form. Abilities like Levitate aren't factored in.
+- [x] **Favorites.** A ☆ button on detail pages and a Favorites filter in the lists, stored in `localStorage`. A team builder (6 Pokémon) is still open.
+- [x] **Faster Pokédex card.** The big card now follows the list after 100ms instead of 500ms.
 
 ## Loose ends
 
 - [ ] **Labels hidden by artwork.** On some home cards the artwork covers the type badges (Miraidon's tail over its Electric badge).
 - [ ] **Only one evolution method shown.** Leafeon shows "at Eterna Forest" but not Leaf Stone. Marked with a `ponytail:` comment in `src/services/pokemon.ts`.
 - [ ] **Sprite cache has no limit.** The `raw.githubusercontent.com` cache grows with every Pokémon viewed. Add an `expiration` setting like the `pokeapi` cache has in `vite.config.ts`.
-- [ ] **Type order differs between pages.** Home cards show Charizard as "Flying, Fire" while the detail page shows "Fire, Flying" (the game's order).
+- [x] **Type order differs between pages.** The shipped list stores types in the game's order, so cards and the detail page agree.
 - [ ] **Noisy screen-reader names.** Home card links are announced as "Charmander #4 Fire Charmander Card". An `aria-label` with just the name would be cleaner.
 - [ ] **Gyro tilt untested on real phones.** The tilt range and re-centering speed (`GYRO_RANGE`, `GYRO_RECENTER` in `PokemonCard.vue`) and the landscape direction need checking on a real device, over HTTPS.
 
