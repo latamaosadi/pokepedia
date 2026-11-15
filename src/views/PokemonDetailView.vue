@@ -1,16 +1,45 @@
+<script lang="ts">
+import type { IPokemonInfo as Info } from '@/types/pokemon'
+import { getPokemonInfo } from '@/services/pokemon'
+
+// Detail data by route id, kept for the session so revisits and prefetched
+// neighbours show instantly (a swipe lands on a ready page, not "Loading…").
+const infoRequests = new Map<string, Promise<Info>>()
+const loadedInfo = new Map<string, Info>()
+
+function fetchInfo(id: string) {
+  let request = infoRequests.get(id)
+  if (!request) {
+    request = getPokemonInfo(id).then((data) => {
+      loadedInfo.set(id, data)
+      return data
+    })
+    request.catch(() => infoRequests.delete(id))
+    infoRequests.set(id, request)
+  }
+  return request
+}
+</script>
+
 <script setup lang="ts">
 import EvolutionChain from '@/components/EvolutionChain.vue'
 import PokemonCard from '@/components/PokemonCard.vue'
 import ShinyToggle from '@/components/ShinyToggle.vue'
 import TypeBadge from '@/components/TypeBadge.vue'
-import { getPokemonInfo } from '@/services/pokemon'
 import { usePokemonStore } from '@/stores/pokemon'
 import type { IPokemon, IPokemonInfo, PokemonType } from '@/types/pokemon'
 import { artwork, defaultSprite } from '@/utils/sprite'
 import { padNumber } from '@/utils/string'
 import { defensiveMatchups } from '@/utils/type-matchups'
-import { onKeyStroke, useSwipe, useTitle } from '@vueuse/core'
-import { computed, ref, watch } from 'vue'
+import { foldPage, gradientFrom, polygonPath } from '@/utils/page-fold'
+import {
+  onKeyStroke,
+  useEventListener,
+  usePreferredReducedMotion,
+  useRafFn,
+  useTitle,
+} from '@vueuse/core'
+import { computed, nextTick, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 const route = useRoute()
@@ -21,6 +50,7 @@ const info = ref<IPokemonInfo>()
 const error = ref<Error>()
 const formId = ref<number>()
 const main = ref<HTMLElement>()
+const swipeEl = ref<HTMLElement>()
 
 const form = computed(
   () => info.value?.forms.find((f) => f.id === formId.value) ?? info.value?.forms[0],
@@ -76,7 +106,7 @@ const previous = computed(() => neighbour(-1))
 const next = computed(() => neighbour(1))
 
 function go(target?: { id: string }) {
-  if (target) router.push({ name: 'dex.detail', params: { id: target.id } })
+  return target && router.push({ name: 'dex.detail', params: { id: target.id } })
 }
 
 onKeyStroke(['ArrowLeft', 'ArrowRight'], (event) => {
@@ -86,23 +116,269 @@ onKeyStroke(['ArrowLeft', 'ArrowRight'], (event) => {
   go(event.key === 'ArrowLeft' ? previous.value : next.value)
 })
 
-useSwipe(main, {
-  onSwipeEnd: (_, direction) => {
-    if (direction === 'left') go(next.value)
-    else if (direction === 'right') go(previous.value)
+// Swipe between Pokémon on touch screens, turning pages like paper. Swiping left folds this
+// page over from its right edge towards the spine on the left, revealing the next Pokémon
+// beneath; swiping right unfolds the previous Pokémon's page back over this one. Letting go past COMMIT_RATIO of the width (or
+// with a flick) finishes the turn, anything less turns it back, so dragging back to the
+// start cancels. The page being turned to is a stand-in (sprite, number, name) until the
+// real one takes over, which is instant because neighbours are preloaded.
+const COMMIT_RATIO = 0.3
+const FLICK_SPEED = 0.5 // px per ms
+const FULL_TURN_RATIO = 0.85 // share of the width a drag needs to turn the page fully
+// Springs, per 60fps frame: the page trails the finger slightly while dragging, then
+// carries its momentum into a soft landing once let go.
+const DRAG_SPRING = { stiffness: 0.35, damping: 0.6 }
+const RELEASE_SPRING = { stiffness: 0.1, damping: 0.75 }
+const reducedMotion = usePreferredReducedMotion()
+const swipe = reactive({
+  x: 0, // where the finger wants the page
+  dragging: false,
+  animating: false,
+  hingeX: 0, // the spine: the page's left edge, in viewport px
+  contentTop: 0, // where the page content starts on screen, below the nav
+  pageTop: 0, // the page element's top on screen (negative when scrolled)
+  grabY: 0, // where the finger first touched
+})
+// Where the page is drawn; chases swipe.x on a spring.
+const page = reactive({ x: 0, velocity: 0 })
+let spring = DRAG_SPRING
+let onArrive: (() => void) | undefined
+
+const { pause: stopSpring, resume: runSpring } = useRafFn(
+  ({ delta }) => {
+    const dt = Math.min(delta / 16.67, 3)
+    page.velocity += (swipe.x - page.x) * spring.stiffness * dt
+    page.velocity *= spring.damping ** dt
+    page.x += page.velocity * dt
+    const near = Math.abs(swipe.x - page.x) < 2
+    if (near && onArrive) {
+      const arrived = onArrive
+      onArrive = undefined
+      arrived()
+    }
+    if (near && Math.abs(page.velocity) < 0.3) {
+      page.x = swipe.x
+      page.velocity = 0
+      stopSpring()
+    }
   },
+  { immediate: false },
+)
+watch(() => swipe.x, () => runSpring())
+
+type Neighbour = NonNullable<ReturnType<typeof neighbour>>
+// Kept for the whole turn, since `next`/`previous` change as soon as navigation happens.
+const turningTo = ref<Neighbour & { side: 'next' | 'previous' }>()
+const handingOver = ref(false)
+
+function placeHinge() {
+  if (main.value) swipe.hingeX = main.value.getBoundingClientRect().left
+  if (!swipeEl.value) return
+  swipe.pageTop = swipeEl.value.getBoundingClientRect().top
+  swipe.contentTop = Math.max(0, swipe.pageTop)
+}
+let touch: { x: number; y: number; axis?: 'x' | 'y'; lastX: number; lastT: number; speed: number } | undefined
+
+const swipeTarget = (dx: number) => (dx < 0 ? next.value : previous.value)
+const pageWidth = () => main.value?.clientWidth || window.innerWidth
+// How far the page has turned: 0 flat, 1 fully over.
+const turned = computed(() => Math.min(Math.abs(page.x) / (pageWidth() * FULL_TURN_RATIO), 1))
+// Peaks mid-turn, when the lifted paper casts the strongest shadow.
+const midTurn = computed(() => Math.sin(turned.value * Math.PI))
+
+useEventListener(
+  main,
+  'touchstart',
+  (event: TouchEvent) => {
+    if (event.touches.length !== 1 || swipe.animating) return
+    const { clientX: x, clientY: y } = event.touches[0]
+    touch = { x, y, lastX: x, lastT: event.timeStamp, speed: 0 }
+    swipe.grabY = y
+    spring = DRAG_SPRING
+    placeHinge()
+  },
+  { passive: true },
+)
+
+useEventListener(
+  main,
+  'touchmove',
+  (event: TouchEvent) => {
+    if (!touch) return
+    const { clientX, clientY } = event.touches[0]
+    const dx = clientX - touch.x
+    const dy = clientY - touch.y
+    // The first few pixels decide whether this is a swipe or a vertical scroll.
+    if (!touch.axis && Math.hypot(dx, dy) > 10) touch.axis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y'
+    if (touch.axis !== 'x') return
+    const elapsed = event.timeStamp - touch.lastT
+    if (elapsed > 0) touch.speed = (clientX - touch.lastX) / elapsed
+    touch.lastX = clientX
+    touch.lastT = event.timeStamp
+    swipe.dragging = true
+    const target = swipeTarget(dx)
+    // Resist where there's no Pokémon to go to.
+    swipe.x = target ? dx : dx * 0.25
+    const side = dx < 0 ? 'next' : 'previous'
+    if (!target || reducedMotion.value === 'reduce') turningTo.value = undefined
+    else if (turningTo.value?.id !== target.id) turningTo.value = { ...target, side }
+  },
+  { passive: true },
+)
+
+function endSwipe() {
+  if (!touch) return
+  const dx = swipe.x
+  const flicked = Math.abs(touch.speed) > FLICK_SPEED && Math.sign(touch.speed) === Math.sign(dx)
+  touch = undefined
+  if (!swipe.dragging) return
+  swipe.dragging = false
+  const width = pageWidth()
+  const target = swipeTarget(dx)
+  const commit = target && (Math.abs(dx) > width * COMMIT_RATIO || (flicked && Math.abs(dx) > 40))
+
+  if (reducedMotion.value === 'reduce') {
+    swipe.x = 0
+    page.x = 0
+    if (commit) go(target)
+    return
+  }
+  // From here the page keeps whatever momentum the finger gave it.
+  spring = RELEASE_SPRING
+  swipe.animating = true
+  if (!commit) {
+    swipe.x = 0
+    onArrive = () => {
+      swipe.animating = false
+      turningTo.value = undefined
+    }
+    return
+  }
+  // Finish the turn, then switch to the real page underneath the stand-in.
+  const direction = Math.sign(dx)
+  swipe.x = direction * width * FULL_TURN_RATIO
+  onArrive = async () => {
+    await go(target)
+    await nextTick()
+    window.scrollTo({ top: 0 })
+    stopSpring()
+    swipe.x = 0
+    page.x = 0
+    page.velocity = 0
+    swipe.animating = false
+    if (direction < 0) {
+      // The turned page is gone; the next one was beneath it all along.
+      turningTo.value = undefined
+      return
+    }
+    // The previous page lies flat over the real one; fade it to hand over.
+    handingOver.value = true
+    setTimeout(() => {
+      turningTo.value = undefined
+      handingOver.value = false
+    }, 150)
+  }
+}
+useEventListener(main, 'touchend', endSwipe, { passive: true })
+useEventListener(main, 'touchcancel', endSwipe, { passive: true })
+
+const MAX_TILT = 0.35 // radians the fold leans when the page is grabbed at its top or bottom
+
+// The fold for the turning sheet (this page going forward, the previous page coming back),
+// in viewport px. It runs through the height where the page was grabbed and leans with it:
+// grabbed low, the page peels from the bottom corner; high, from the top. The lean peaks
+// mid-turn and is gone when the page lies flat or reaches the spine.
+const fold = computed(() => {
+  const left = swipe.hingeX
+  const width = pageWidth()
+  const top = swipe.contentTop
+  const bottom = window.innerHeight
+  const t = turningTo.value?.side === 'previous' ? 1 - turned.value : turned.value
+  const grab = Math.max(-1, Math.min(1, (swipe.grabY - (top + bottom) / 2) / ((bottom - top) / 2)))
+  const angle = -grab * MAX_TILT * Math.sin(t * Math.PI)
+  const through = { x: left + width - t * width, y: swipe.grabY }
+  return { ...foldPage({ left, right: left + width, top, bottom }, through, angle), through }
+})
+
+// The back of the paper, shaded like a sheet rolling over: a bright rim where it bends at
+// the fold, darker through the curve, lighter again, then shaded at its free edge.
+const flapStyle = computed(() => {
+  const { flap, normal, through } = fold.value
+  const towardsSpine = { x: -normal.x, y: -normal.y }
+  return {
+    clipPath: polygonPath(flap),
+    backgroundImage: gradientFrom(through, towardsSpine, window.innerWidth, window.innerHeight, [
+      [0, 'rgb(255 255 255 / 0.95)'],
+      [5, 'rgb(255 255 255 / 0.45)'],
+      [40, 'rgb(0 0 0 / 0.02)'],
+      [130, 'rgb(0 0 0 / 0.12)'],
+      [240, 'rgb(0 0 0 / 0.04)'],
+      [420, 'rgb(0 0 0 / 0.14)'],
+    ]),
+  }
+})
+
+// The flap's shadow on the front it lies on; drop-shadow because the flap is clipped.
+const flapShadow = computed(() => {
+  const { normal } = fold.value
+  return `drop-shadow(${-8 * normal.x}px ${-8 * normal.y}px 12px rgb(0 0 0 / ${0.35 * midTurn.value}))`
+})
+
+// Soft shadow the lifted paper casts on the page beneath, just past the fold.
+const foldShadowStyle = computed(() => {
+  const { normal, through } = fold.value
+  const strength = midTurn.value
+  const right = window.innerWidth - (swipe.hingeX + pageWidth())
+  return {
+    // Only on the page, not over the nav bar or the side margins.
+    clipPath: `inset(${swipe.contentTop}px ${right}px 0 ${swipe.hingeX}px)`,
+    backgroundImage: gradientFrom(through, normal, window.innerWidth, window.innerHeight, [
+      [-1, 'transparent'],
+      [0, `rgb(0 0 0 / ${0.3 * strength})`],
+      [30, `rgb(0 0 0 / ${0.1 * strength})`],
+      [90, 'transparent'],
+    ]),
+  }
+})
+
+const swipeStyle = computed(() => {
+  if (turningTo.value?.side === 'next') {
+    const pageOrigin = { x: swipe.hingeX, y: swipe.pageTop }
+    return { clipPath: polygonPath(fold.value.front, pageOrigin), zIndex: 10 }
+  }
+  // Nothing to turn to (first or last Pokémon): the page just budges.
+  if (!turningTo.value && page.x && reducedMotion.value !== 'reduce') {
+    return { transform: `translateX(${page.x}px)` }
+  }
+  return undefined
+})
+
+const coverStyle = computed(() => {
+  if (turningTo.value?.side !== 'previous') return undefined
+  const clipPath = polygonPath(fold.value.front)
+  if (handingOver.value) return { clipPath, opacity: 0, transition: 'opacity 150ms ease-out' }
+  return { clipPath }
 })
 
 useTitle(() => (info.value ? `${info.value.formattedName} · Poképedia` : 'Poképedia'))
 
+function show(data: IPokemonInfo) {
+  info.value = data
+  formId.value = data.forms[0]?.id
+  // Warm up the neighbours so swiping or stepping to them is instant.
+  for (const neighbourPokemon of [previous.value, next.value]) {
+    if (neighbourPokemon) fetchInfo(neighbourPokemon.id).catch(() => {})
+  }
+}
+
 async function load(requested: string) {
-  info.value = undefined
   error.value = undefined
+  const cached = loadedInfo.get(requested)
+  if (cached) return show(cached)
+  info.value = undefined
   try {
-    const data = await getPokemonInfo(requested)
-    if (id.value !== requested) return
-    info.value = data
-    formId.value = data.forms[0]?.id
+    const data = await fetchInfo(requested)
+    if (id.value === requested) show(data)
   } catch (e) {
     if (id.value === requested) error.value = e as Error
   }
@@ -112,8 +388,11 @@ watch(id, (value) => value && load(value), { immediate: true })
 </script>
 
 <template>
-  <main ref="main" class="text-neutral-800 dark:text-neutral-100">
-    <nav class="mb-4 flex items-center justify-between gap-2" aria-label="Pokémon navigation">
+  <main ref="main" class="touch-pan-y text-neutral-800 dark:text-neutral-100">
+    <nav
+      class="relative z-20 mb-4 flex items-center justify-between gap-2"
+      aria-label="Pokémon navigation"
+    >
       <RouterLink
         to="/"
         class="shrink-0 rounded font-bold whitespace-nowrap outline-none hover:underline focus-visible:ring-4 focus-visible:ring-blue-400"
@@ -159,142 +438,190 @@ watch(id, (value) => value && load(value), { immediate: true })
     </nav>
 
     <div
-      v-if="error"
-      role="alert"
-      class="flex items-center justify-between gap-4 rounded-xl bg-red-100 p-4 text-red-800"
+      ref="swipeEl"
+      class="relative bg-neutral-100 dark:bg-neutral-700"
+      :style="swipeStyle"
     >
-      <span v-if="error.message.startsWith('404')">There's no Pokémon called “{{ id }}”.</span>
-      <span v-else>Couldn't load this Pokémon. Check your connection and try again.</span>
-      <button
-        v-if="!error.message.startsWith('404')"
-        class="rounded-lg bg-red-700 px-3 py-1 font-bold text-white"
-        @click="id && load(id)"
+      <div
+        v-if="error"
+        role="alert"
+        class="flex items-center justify-between gap-4 rounded-xl bg-red-100 p-4 text-red-800"
       >
-        Retry
-      </button>
-    </div>
-
-    <p v-else-if="!info" class="font-pixel text-2xl" aria-busy="true">Loading…</p>
-
-    <div v-else class="grid items-start gap-8 md:grid-cols-[minmax(0,20rem)_1fr]">
-      <PokemonCard :pokemon="card" :shiny="pokemonStore.shiny" gyro class="mx-auto w-full max-w-xs" />
-
-      <div class="space-y-6">
-        <header>
-          <p class="font-bold text-neutral-500 dark:text-neutral-400">
-            #{{ padNumber(info.number) }}
-          </p>
-          <div class="flex flex-wrap items-center gap-3">
-            <h1 class="font-inter text-4xl font-black">{{ info.formattedName }}</h1>
-            <button
-              v-if="canPlayCry && form?.cry"
-              class="rounded-full bg-white px-3 py-1 text-sm font-bold shadow-sm outline-none hover:bg-neutral-50 focus-visible:ring-4 focus-visible:ring-blue-400 dark:bg-neutral-800 dark:hover:bg-neutral-700"
-              :aria-label="`Play ${form.name}'s cry`"
-              @click="playCry"
-            >
-              🔊 Cry
-            </button>
-            <button
-              type="button"
-              :aria-pressed="pokemonStore.isFavorite(info.number)"
-              :class="[
-                'rounded-full px-3 py-1 text-sm font-bold shadow-sm outline-none focus-visible:ring-4 focus-visible:ring-blue-400',
-                pokemonStore.isFavorite(info.number)
-                  ? 'bg-rose-600 text-white'
-                  : 'bg-white hover:bg-neutral-50 dark:bg-neutral-800 dark:hover:bg-neutral-700',
-              ]"
-              @click="pokemonStore.toggleFavorite(info.number)"
-            >
-              {{ pokemonStore.isFavorite(info.number) ? '★' : '☆' }} Favorite
-            </button>
-            <ShinyToggle />
-          </div>
-          <p class="font-pixel text-xl">{{ info.genus }}</p>
-        </header>
-
-        <label v-if="info.forms.length > 1" class="block">
-          <span class="mb-1 block font-bold">Form</span>
-          <select
-            v-model="formId"
-            class="select-chevron w-full max-w-xs rounded-lg bg-white py-2 pr-10 pl-3 dark:bg-neutral-800"
-          >
-            <option v-for="f in info.forms" :key="f.id" :value="f.id">{{ f.name }}</option>
-          </select>
-        </label>
-
-        <dl class="font-pixel grid max-w-xs grid-cols-2 gap-2 text-xl">
-          <div>
-            <dt class="text-neutral-500 dark:text-neutral-400">Height</dt>
-            <dd>{{ form?.height }}</dd>
-          </div>
-          <div>
-            <dt class="text-neutral-500 dark:text-neutral-400">Weight</dt>
-            <dd>{{ form?.weight }}</dd>
-          </div>
-        </dl>
-
-        <section v-if="form?.abilities.length">
-          <h2 class="font-inter mb-2 text-2xl font-black">Abilities</h2>
-          <ul class="font-pixel flex flex-wrap gap-2 text-xl">
-            <li
-              v-for="ability in form.abilities"
-              :key="ability.name"
-              class="rounded-lg bg-white px-3 py-1 shadow-sm dark:bg-neutral-800"
-            >
-              {{ ability.name }}
-              <span v-if="ability.hidden" class="text-neutral-500 dark:text-neutral-400">
-                (hidden)
-              </span>
-            </li>
-          </ul>
-        </section>
-
-        <section v-if="form?.stats.length">
-          <h2 class="font-inter mb-2 text-2xl font-black">Base stats</h2>
-          <dl class="font-pixel grid max-w-md grid-cols-[6rem_3rem_1fr] items-center gap-x-3 gap-y-1 text-xl">
-            <template v-for="stat in form.stats" :key="stat.name">
-              <dt class="text-neutral-500 dark:text-neutral-400">{{ stat.name }}</dt>
-              <dd class="text-right">{{ stat.value }}</dd>
-              <dd class="h-3 overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-800">
-                <div
-                  class="h-full rounded-full"
-                  :style="{
-                    width: `${(stat.value / MAX_BASE_STAT) * 100}%`,
-                    backgroundColor: `var(--color-poke-${info.color})`,
-                  }"
-                ></div>
-              </dd>
-            </template>
-            <dt class="font-bold">Total</dt>
-            <dd class="text-right font-bold">{{ statsTotal }}</dd>
-          </dl>
-        </section>
-
-        <section v-if="matchups.length">
-          <h2 class="font-inter text-2xl font-black">Type matchups</h2>
-          <p class="mb-2 text-sm text-neutral-500 dark:text-neutral-400">
-            Damage taken from each attacking type
-          </p>
-          <dl class="grid grid-cols-[3rem_1fr] items-center gap-x-3 gap-y-2">
-            <template v-for="group in matchups" :key="group.label">
-              <dt class="font-pixel text-xl">{{ group.label }}</dt>
-              <dd><TypeBadge :types="group.types" class="flex-wrap gap-1" /></dd>
-            </template>
-          </dl>
-        </section>
-
-        <p
-          class="font-pixel rounded-md border-2 border-dashed p-3 text-xl"
-          :style="`border-color: var(--color-poke-${info.color})`"
+        <span v-if="error.message.startsWith('404')">There's no Pokémon called “{{ id }}”.</span>
+        <span v-else>Couldn't load this Pokémon. Check your connection and try again.</span>
+        <button
+          v-if="!error.message.startsWith('404')"
+          class="rounded-lg bg-red-700 px-3 py-1 font-bold text-white"
+          @click="id && load(id)"
         >
-          {{ info.description || 'No info yet' }}
-        </p>
+          Retry
+        </button>
+      </div>
 
-        <section v-if="info.evolutionChain">
-          <h2 class="font-inter mb-2 text-2xl font-black">Evolution</h2>
-          <EvolutionChain :evolution="info.evolutionChain" />
-        </section>
+      <p v-else-if="!info" class="font-pixel text-2xl" aria-busy="true">Loading…</p>
+
+      <div v-else class="grid items-start gap-8 md:grid-cols-[minmax(0,20rem)_1fr]">
+        <PokemonCard :pokemon="card" :shiny="pokemonStore.shiny" gyro class="mx-auto w-full max-w-xs" />
+
+        <div class="space-y-6">
+          <header>
+            <p class="font-bold text-neutral-500 dark:text-neutral-400">
+              #{{ padNumber(info.number) }}
+            </p>
+            <div class="flex flex-wrap items-center gap-3">
+              <h1 class="font-inter text-4xl font-black">{{ info.formattedName }}</h1>
+              <button
+                v-if="canPlayCry && form?.cry"
+                class="rounded-full bg-white px-3 py-1 text-sm font-bold shadow-sm outline-none hover:bg-neutral-50 focus-visible:ring-4 focus-visible:ring-blue-400 dark:bg-neutral-800 dark:hover:bg-neutral-700"
+                :aria-label="`Play ${form.name}'s cry`"
+                @click="playCry"
+              >
+                🔊 Cry
+              </button>
+              <button
+                type="button"
+                :aria-pressed="pokemonStore.isFavorite(info.number)"
+                :class="[
+                  'rounded-full px-3 py-1 text-sm font-bold shadow-sm outline-none focus-visible:ring-4 focus-visible:ring-blue-400',
+                  pokemonStore.isFavorite(info.number)
+                    ? 'bg-rose-600 text-white'
+                    : 'bg-white hover:bg-neutral-50 dark:bg-neutral-800 dark:hover:bg-neutral-700',
+                ]"
+                @click="pokemonStore.toggleFavorite(info.number)"
+              >
+                {{ pokemonStore.isFavorite(info.number) ? '★' : '☆' }} Favorite
+              </button>
+              <ShinyToggle />
+            </div>
+            <p class="font-pixel text-xl">{{ info.genus }}</p>
+          </header>
+
+          <label v-if="info.forms.length > 1" class="block">
+            <span class="mb-1 block font-bold">Form</span>
+            <select
+              v-model="formId"
+              class="select-chevron w-full max-w-xs rounded-lg bg-white py-2 pr-10 pl-3 dark:bg-neutral-800"
+            >
+              <option v-for="f in info.forms" :key="f.id" :value="f.id">{{ f.name }}</option>
+            </select>
+          </label>
+
+          <dl class="font-pixel grid max-w-xs grid-cols-2 gap-2 text-xl">
+            <div>
+              <dt class="text-neutral-500 dark:text-neutral-400">Height</dt>
+              <dd>{{ form?.height }}</dd>
+            </div>
+            <div>
+              <dt class="text-neutral-500 dark:text-neutral-400">Weight</dt>
+              <dd>{{ form?.weight }}</dd>
+            </div>
+          </dl>
+
+          <section v-if="form?.abilities.length">
+            <h2 class="font-inter mb-2 text-2xl font-black">Abilities</h2>
+            <ul class="font-pixel flex flex-wrap gap-2 text-xl">
+              <li
+                v-for="ability in form.abilities"
+                :key="ability.name"
+                class="rounded-lg bg-white px-3 py-1 shadow-sm dark:bg-neutral-800"
+              >
+                {{ ability.name }}
+                <span v-if="ability.hidden" class="text-neutral-500 dark:text-neutral-400">
+                  (hidden)
+                </span>
+              </li>
+            </ul>
+          </section>
+
+          <section v-if="form?.stats.length">
+            <h2 class="font-inter mb-2 text-2xl font-black">Base stats</h2>
+            <dl class="font-pixel grid max-w-md grid-cols-[6rem_3rem_1fr] items-center gap-x-3 gap-y-1 text-xl">
+              <template v-for="stat in form.stats" :key="stat.name">
+                <dt class="text-neutral-500 dark:text-neutral-400">{{ stat.name }}</dt>
+                <dd class="text-right">{{ stat.value }}</dd>
+                <dd class="h-3 overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-800">
+                  <div
+                    class="h-full rounded-full"
+                    :style="{
+                      width: `${(stat.value / MAX_BASE_STAT) * 100}%`,
+                      backgroundColor: `var(--color-poke-${info.color})`,
+                    }"
+                  ></div>
+                </dd>
+              </template>
+              <dt class="font-bold">Total</dt>
+              <dd class="text-right font-bold">{{ statsTotal }}</dd>
+            </dl>
+          </section>
+
+          <section v-if="matchups.length">
+            <h2 class="font-inter text-2xl font-black">Type matchups</h2>
+            <p class="mb-2 text-sm text-neutral-500 dark:text-neutral-400">
+              Damage taken from each attacking type
+            </p>
+            <dl class="grid grid-cols-[3rem_1fr] items-center gap-x-3 gap-y-2">
+              <template v-for="group in matchups" :key="group.label">
+                <dt class="font-pixel text-xl">{{ group.label }}</dt>
+                <dd><TypeBadge :types="group.types" class="flex-wrap gap-1" /></dd>
+              </template>
+            </dl>
+          </section>
+
+          <p
+            class="font-pixel rounded-md border-2 border-dashed p-3 text-xl"
+            :style="`border-color: var(--color-poke-${info.color})`"
+          >
+            {{ info.description || 'No info yet' }}
+          </p>
+
+          <section v-if="info.evolutionChain">
+            <h2 class="font-inter mb-2 text-2xl font-black">Evolution</h2>
+            <EvolutionChain :evolution="info.evolutionChain" />
+          </section>
+        </div>
       </div>
     </div>
+
+    <div
+      v-if="turningTo"
+      aria-hidden="true"
+      :class="['pointer-events-none fixed inset-0', turningTo.side === 'next' ? 'z-0' : 'z-40']"
+    >
+      <div
+        class="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-neutral-100 dark:bg-neutral-700"
+        :style="coverStyle"
+      >
+        <div class="absolute inset-y-0 left-0 w-10 bg-linear-to-r from-black/15 to-transparent"></div>
+        <img
+          :src="turningTo.sprite"
+          alt=""
+          width="96"
+          height="96"
+          class="size-40 [image-rendering:pixelated]"
+        />
+        <p class="font-bold text-neutral-500 dark:text-neutral-400">
+          #{{ padNumber(turningTo.number) }}
+        </p>
+        <p class="font-inter text-4xl font-black text-neutral-800 dark:text-neutral-100">
+          {{ turningTo.name }}
+        </p>
+      </div>
+    </div>
+
+    <template v-if="turningTo">
+      <div
+        aria-hidden="true"
+        :class="['pointer-events-none fixed inset-0', turningTo.side === 'next' ? 'z-[5]' : 'z-30']"
+        :style="foldShadowStyle"
+      ></div>
+      <div
+        v-if="fold.flap.length"
+        aria-hidden="true"
+        :class="['pointer-events-none fixed inset-0', turningTo.side === 'next' ? 'z-[15]' : 'z-[45]']"
+        :style="{ filter: flapShadow }"
+      >
+        <div class="absolute inset-0 bg-neutral-200 dark:bg-neutral-600" :style="flapStyle"></div>
+      </div>
+    </template>
   </main>
 </template>
