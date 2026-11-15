@@ -1,83 +1,41 @@
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
+import { beforeEach, describe, expect, test } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { nextTick } from 'vue'
 import { usePokemonStore } from '../pokemon'
 
-const API = 'https://pokeapi.co/api/v2'
-
-// Minimal PokeAPI: bulbasaur (grass/poison, green) and charmander (fire, red).
-const types: Record<number, { name: string; ids: number[] }> = {
-  4: { name: 'poison', ids: [1] },
-  10: { name: 'fire', ids: [4] },
-  12: { name: 'grass', ids: [1] },
-}
-const colors: Record<number, { name: string; ids: number[] }> = {
-  5: { name: 'green', ids: [1] },
-  8: { name: 'red', ids: [4] },
-}
-
-function fakeApi(failing?: string) {
-  return async (url: string) => {
-    if (url === failing) return new Response('boom', { status: 500 })
-    let body: unknown
-    if (url.startsWith(`${API}/pokemon-species?`)) {
-      body = {
-        results: [
-          { name: 'bulbasaur', url: `${API}/pokemon-species/1/` },
-          { name: 'charmander', url: `${API}/pokemon-species/4/` },
-        ],
-      }
-    } else if (url.startsWith(`${API}/type/`)) {
-      const t = types[Number(url.split('/').pop())] ?? { name: 'normal', ids: [] }
-      body = {
-        name: t.name,
-        pokemon: t.ids.map((id) => ({ pokemon: { url: `${API}/pokemon/${id}/` } })),
-      }
-    } else if (url.startsWith(`${API}/pokemon-color/`)) {
-      const c = colors[Number(url.split('/').pop())] ?? { name: 'black', ids: [] }
-      body = { name: c.name, pokemon_species: c.ids.map((id) => ({ url: `${API}/pokemon-species/${id}/` })) }
-    } else {
-      throw new Error(`unexpected url ${url}`)
-    }
-    return new Response(JSON.stringify(body))
-  }
-}
+const sprites = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon'
 
 beforeEach(() => {
   localStorage.clear()
   setActivePinia(createPinia())
 })
-afterEach(() => vi.unstubAllGlobals())
 
 describe('pokemon store', () => {
-  test('builds the list with each pokemon’s types and color, and caches it', async () => {
-    vi.stubGlobal('fetch', vi.fn(fakeApi()))
+  test('ships the full National Dex with types in game order, without any network', () => {
     const store = usePokemonStore()
 
-    await store.getList()
-    await nextTick()
-
-    expect(store.error).toBeNull()
-    expect(store.list.map(({ name, types, color }) => ({ name, types, color }))).toEqual([
-      { name: 'bulbasaur', types: [{ name: 'poison' }, { name: 'grass' }], color: 'green' },
-      { name: 'charmander', types: [{ name: 'fire' }], color: 'red' },
-    ])
-    expect(JSON.parse(localStorage.getItem('pokedex/v2/pokemon')!)).toEqual(store.list)
+    expect(store.list).toHaveLength(1025)
+    expect(store.list[5]).toEqual({
+      number: 6,
+      name: 'charizard',
+      formattedName: 'Charizard',
+      sprite: `${sprites}/6.png`,
+      artwork: `${sprites}/other/official-artwork/6.png`,
+      color: 'red',
+      types: [{ name: 'fire' }, { name: 'flying' }],
+    })
+    expect(store.list.every((pokemon) => pokemon.types?.length && pokemon.color)).toBe(true)
   })
 
   test.each([
-    ['char', '', ['charmander']],
-    ['BULBA', '', ['bulbasaur']],
-    ['4', '', ['charmander']],
     ['#001', '', ['bulbasaur']],
-    ['', 'grass', ['bulbasaur']],
-    ['', 'fire', ['charmander']],
+    ['025', '', ['pikachu']],
+    ['25', '', ['pikachu', 'ho-oh', 'celebi', 'treecko', 'grovyle', 'sceptile', 'torchic', 'combusken', 'blaziken', 'mudkip', 'marshtomp']],
+    ['charm', '', ['charmander', 'charmeleon']],
+    ['MR MIME', '', ['mr-mime']],
     ['bulba', 'fire', []],
-    ['  ', '', ['bulbasaur', 'charmander']],
-  ] as const)('filters by search %j and type %j', async (query, type, expected) => {
-    vi.stubGlobal('fetch', vi.fn(fakeApi()))
+  ] as const)('filters by search %j and type %j', (query, type, expected) => {
     const store = usePokemonStore()
-    await store.getList()
 
     store.query = query
     store.type = type
@@ -85,64 +43,54 @@ describe('pokemon store', () => {
     expect(store.filtered.map((p) => p.name)).toEqual(expected)
   })
 
-  test('the shiny switch shows shiny art without changing the cached list, and is remembered', async () => {
-    vi.stubGlobal('fetch', vi.fn(fakeApi()))
+  test('the type filter keeps only Pokémon of that type', () => {
     const store = usePokemonStore()
-    await store.getList()
+
+    store.type = 'dragon'
+
+    expect(store.filtered.length).toBeGreaterThan(50)
+    expect(store.filtered.every((p) => p.types?.some((t) => t.name === 'dragon'))).toBe(true)
+    expect(store.filtered.map((p) => p.name)).toContain('dragonite')
+  })
+
+  test('the shiny switch shows shiny art without changing the list, and is remembered', async () => {
+    const store = usePokemonStore()
 
     store.shiny = true
     await nextTick()
 
-    const sprites = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon'
     expect(store.filtered[0]).toMatchObject({
       name: 'bulbasaur',
       sprite: `${sprites}/shiny/1.png`,
       artwork: `${sprites}/other/official-artwork/shiny/1.png`,
     })
     expect(store.list[0].artwork).toBe(`${sprites}/other/official-artwork/1.png`)
-    expect(JSON.parse(localStorage.getItem('pokedex/v2/pokemon')!)[0].artwork).toBe(
-      `${sprites}/other/official-artwork/1.png`,
-    )
     expect(localStorage.getItem('pokedex/shiny')).toBe('true')
   })
 
-  test('a failed request reports an error and caches nothing; retry recovers', async () => {
-    vi.stubGlobal('fetch', vi.fn(fakeApi(`${API}/type/7`)))
+  test('favorites can be toggled, filtered to, combined with search, and are remembered', async () => {
     const store = usePokemonStore()
 
-    await store.getList()
+    store.toggleFavorite(6)
+    store.toggleFavorite(25)
+    store.toggleFavorite(150)
+    store.toggleFavorite(25)
+    store.favoritesOnly = true
     await nextTick()
 
-    expect(store.error?.message).toContain('500')
-    expect(store.list).toEqual([])
-    expect(JSON.parse(localStorage.getItem('pokedex/v2/pokemon') ?? '[]')).toEqual([])
-
-    vi.stubGlobal('fetch', vi.fn(fakeApi()))
-    await store.getList()
-
-    expect(store.error).toBeNull()
-    expect(store.list.map((p) => p.name)).toEqual(['bulbasaur', 'charmander'])
+    expect(store.filtered.map((p) => p.name)).toEqual(['charizard', 'mewtwo'])
+    store.query = 'mew'
+    expect(store.filtered.map((p) => p.name)).toEqual(['mewtwo'])
+    expect(JSON.parse(localStorage.getItem('pokedex/favorites')!)).toEqual([6, 150])
   })
 
-  test('uses the cached list without touching the network', async () => {
-    const cached = [{ name: 'pikachu', formattedName: 'Pikachu', number: 25, sprite: 's' }]
-    localStorage.setItem('pokedex/v2/pokemon', JSON.stringify(cached))
-    vi.stubGlobal('fetch', () => Promise.reject(new Error('offline')))
-    const store = usePokemonStore()
-
-    await store.getList()
-
-    expect(store.error).toBeNull()
-    expect(store.list).toEqual(cached)
-  })
-
-  test('drops caches from older versions', () => {
+  test('drops caches from versions that fetched the list at runtime', () => {
     localStorage.setItem('pokedex/pokemon', '[{"name":"stale"}]')
-    localStorage.setItem('pokedex/types', '[]')
+    localStorage.setItem('pokedex/v2/pokemon', '[{"name":"stale"}]')
 
     usePokemonStore()
 
     expect(localStorage.getItem('pokedex/pokemon')).toBeNull()
-    expect(localStorage.getItem('pokedex/types')).toBeNull()
+    expect(localStorage.getItem('pokedex/v2/pokemon')).toBeNull()
   })
 })

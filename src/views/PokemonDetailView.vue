@@ -2,11 +2,13 @@
 import EvolutionChain from '@/components/EvolutionChain.vue'
 import PokemonCard from '@/components/PokemonCard.vue'
 import ShinyToggle from '@/components/ShinyToggle.vue'
+import TypeBadge from '@/components/TypeBadge.vue'
 import { getPokemonInfo } from '@/services/pokemon'
 import { usePokemonStore } from '@/stores/pokemon'
-import type { IPokemon, IPokemonInfo } from '@/types/pokemon'
+import type { IPokemon, IPokemonInfo, PokemonType } from '@/types/pokemon'
 import { artwork, defaultSprite } from '@/utils/sprite'
 import { padNumber } from '@/utils/string'
+import { defensiveMatchups } from '@/utils/type-matchups'
 import { onKeyStroke, useSwipe, useTitle } from '@vueuse/core'
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -43,6 +45,13 @@ const canPlayCry =
 // Highest base stat in the games, so bars share one scale across Pokémon.
 const MAX_BASE_STAT = 255
 const statsTotal = computed(() => form.value?.stats.reduce((sum, stat) => sum + stat.value, 0) ?? 0)
+
+const matchups = computed(() =>
+  defensiveMatchups(form.value?.types.map((t) => t.name) ?? []).map(({ multiplier, types }) => ({
+    label: { 4: '4×', 2: '2×', 0.5: '½×', 0.25: '¼×', 0: '0×' }[multiplier],
+    types: types.map((name) => ({ name: name as PokemonType })),
+  })),
+)
 
 function playCry() {
   if (form.value?.cry) new Audio(form.value.cry).play().catch(() => {})
@@ -175,7 +184,7 @@ watch(id, (value) => value && load(value), { immediate: true })
           <p class="font-bold text-neutral-500 dark:text-neutral-400">
             #{{ padNumber(info.number) }}
           </p>
-          <div class="flex items-center gap-3">
+          <div class="flex flex-wrap items-center gap-3">
             <h1 class="font-inter text-4xl font-black">{{ info.formattedName }}</h1>
             <button
               v-if="canPlayCry && form?.cry"
@@ -184,6 +193,19 @@ watch(id, (value) => value && load(value), { immediate: true })
               @click="playCry"
             >
               🔊 Cry
+            </button>
+            <button
+              type="button"
+              :aria-pressed="pokemonStore.isFavorite(info.number)"
+              :class="[
+                'rounded-full px-3 py-1 text-sm font-bold shadow-sm outline-none focus-visible:ring-4 focus-visible:ring-blue-400',
+                pokemonStore.isFavorite(info.number)
+                  ? 'bg-rose-600 text-white'
+                  : 'bg-white hover:bg-neutral-50 dark:bg-neutral-800 dark:hover:bg-neutral-700',
+              ]"
+              @click="pokemonStore.toggleFavorite(info.number)"
+            >
+              {{ pokemonStore.isFavorite(info.number) ? '★' : '☆' }} Favorite
             </button>
             <ShinyToggle />
           </div>
@@ -245,6 +267,19 @@ watch(id, (value) => value && load(value), { immediate: true })
             </template>
             <dt class="font-bold">Total</dt>
             <dd class="text-right font-bold">{{ statsTotal }}</dd>
+          </dl>
+        </section>
+
+        <section v-if="matchups.length">
+          <h2 class="font-inter text-2xl font-black">Type matchups</h2>
+          <p class="mb-2 text-sm text-neutral-500 dark:text-neutral-400">
+            Damage taken from each attacking type
+          </p>
+          <dl class="grid grid-cols-[3rem_1fr] items-center gap-x-3 gap-y-2">
+            <template v-for="group in matchups" :key="group.label">
+              <dt class="font-pixel text-xl">{{ group.label }}</dt>
+              <dd><TypeBadge :types="group.types" class="flex-wrap gap-1" /></dd>
+            </template>
           </dl>
         </section>
 

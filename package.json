@@ -16,7 +16,8 @@
     "lint:oxlint": "oxlint . --fix -D correctness --ignore-path .gitignore",
     "lint:eslint": "eslint . --fix",
     "lint": "run-s lint:*",
-    "format": "prettier --write src/"
+    "format": "prettier --write src/",
+    "update-data": "bun scripts/update-pokemon-data.ts"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.0.0-beta.4",

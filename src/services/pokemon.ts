@@ -2,7 +2,6 @@ import type {
   IEvolutionChain,
   IForm,
   INamedResource,
-  IPokemon,
   IPokemonInfo,
 } from '@/types/pokemon'
 import { artwork, defaultSprite, itemSprite } from '@/utils/sprite'
@@ -33,22 +32,6 @@ export function getIdFromUrl(url: string) {
 }
 
 const isEnglish = (entry: { language: INamedResource }) => entry.language.name === 'en'
-
-export async function getPokemonList(): Promise<IPokemon[]> {
-  const size = 1025
-  const data = await getJson(`${API}/pokemon-species?limit=${size}`)
-
-  return data.results.map((pokemon: INamedResource): IPokemon => {
-    const number = getIdFromUrl(pokemon.url || '')
-    return {
-      name: pokemon.name,
-      formattedName: titleCase(pokemon.name),
-      number,
-      sprite: defaultSprite(number),
-      artwork: artwork(number),
-    }
-  })
-}
 
 export function describeEvolution(detail: Raw): string {
   const parts = [

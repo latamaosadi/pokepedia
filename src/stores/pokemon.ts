@@ -1,32 +1,51 @@
-import { getPokemonList } from '@/services/pokemon'
-import getColorList from '@/services/color'
-import getTypeList from '@/services/type'
+import pokemonData from '@/data/pokemon.json'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import type { IPokemon, PokemonType } from '@/types/pokemon'
 import { matchesFilter } from '@/utils/pokemon'
 import { artwork, defaultSprite } from '@/utils/sprite'
+import { titleCase } from '@/utils/string'
 import { useLocalStorage } from '@vueuse/core'
 
-// Bump the version when the cached shape or mapping changes.
-const CACHE_KEY = 'pokedex/v2/pokemon'
-const LEGACY_KEYS = ['pokedex/pokemon', 'pokedex/types', 'pokedex/colors']
+// Caches from versions that fetched the list at runtime.
+const LEGACY_KEYS = ['pokedex/pokemon', 'pokedex/types', 'pokedex/colors', 'pokedex/v2/pokemon']
+
+// Shipped with the app (regenerate with `bun run update-data`), so the list is
+// there on the very first visit, offline included.
+const list: IPokemon[] = pokemonData.map(({ number, name, types, color }) => ({
+  number,
+  name,
+  formattedName: titleCase(name),
+  sprite: defaultSprite(number),
+  artwork: artwork(number),
+  color,
+  types: types.map((type) => ({ name: type as PokemonType })),
+}))
 
 export const usePokemonStore = defineStore('pokemon', () => {
   try {
     LEGACY_KEYS.forEach((key) => localStorage.removeItem(key))
   } catch {}
 
-  const list = useLocalStorage<IPokemon[]>(CACHE_KEY, [])
-  const error = ref<Error | null>(null)
   // Shared by the home grid and the Pokédex so the filter survives switching views.
   const query = ref('')
   const type = ref<PokemonType | ''>('')
   // App-wide shiny switch, remembered across visits.
   const shiny = useLocalStorage('pokedex/shiny', false)
+  // Favorite Pokédex numbers, remembered across visits.
+  const favorites = useLocalStorage<number[]>('pokedex/favorites', [])
+  const favoritesOnly = ref(false)
+
+  const isFavorite = (number: number) => favorites.value.includes(number)
+  function toggleFavorite(number: number) {
+    favorites.value = isFavorite(number)
+      ? favorites.value.filter((n) => n !== number)
+      : [...favorites.value, number]
+  }
   // The list as shown: filtered, with shiny art swapped in when the switch is on.
   const filtered = computed(() =>
-    list.value
+    list
+      .filter((pokemon) => !favoritesOnly.value || isFavorite(pokemon.number))
       .filter((pokemon) => matchesFilter(pokemon, query.value, type.value))
       .map((pokemon) =>
         shiny.value
@@ -40,36 +59,18 @@ export const usePokemonStore = defineStore('pokemon', () => {
   )
   // Changes with the filter. Virtual lists key on it to remount, so rows recycled from
   // a longer list don't linger off-screen where Tab and screen readers still reach them.
-  const filterKey = computed(() => `${query.value}|${type.value}`)
-  let pending: Promise<void> | null = null
+  const filterKey = computed(() => `${query.value}|${type.value}|${favoritesOnly.value}`)
 
-  async function fetchList() {
-    const [data, types, colors] = await Promise.all([
-      getPokemonList(),
-      getTypeList(),
-      getColorList(),
-    ])
-    for (const pokemon of data) {
-      pokemon.types = types
-        .filter((type) => type.pokemon?.includes(pokemon.number))
-        .map(({ name }) => ({ name }))
-      pokemon.color = colors.find((color) => color.pokemon?.includes(pokemon.number))?.name
-    }
-    list.value = data
+  return {
+    list,
+    filtered,
+    filterKey,
+    query,
+    type,
+    shiny,
+    favorites,
+    favoritesOnly,
+    isFavorite,
+    toggleFavorite,
   }
-
-  function getList() {
-    if (list.value.length) return Promise.resolve()
-    error.value = null
-    pending ??= fetchList()
-      .catch((e) => {
-        error.value = e
-      })
-      .finally(() => {
-        pending = null
-      })
-    return pending
-  }
-
-  return { list, filtered, filterKey, query, type, shiny, error, getList }
 })

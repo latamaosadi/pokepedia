@@ -44,13 +44,16 @@ export function formatFormName(name: string, speciesName: string) {
 }
 
 /**
- * Search match on name or Pokédex number ("pika", "mr mime", "25", "#025"),
- * optionally limited to one type.
+ * Search match on name or Pokédex number, optionally limited to one type. Plain digits
+ * match as a prefix while typing ("25" → 25, 250–259); a padded number ("025", "#025")
+ * is exact.
  */
 export function matchesFilter(pokemon: IPokemon, query: string, type: string) {
   if (type && !pokemon.types?.some((t) => t.name === type)) return false
-  const q = query.trim().toLowerCase().replace(/^#0*/, '')
+  const q = query.trim().toLowerCase().replace(/^#/, '')
   if (!q) return true
-  if (/^\d+$/.test(q)) return String(pokemon.number).startsWith(q)
+  if (/^\d+$/.test(q)) {
+    return q.startsWith('0') ? pokemon.number === Number(q) : String(pokemon.number).startsWith(q)
+  }
   return pokemon.formattedName.toLowerCase().includes(q) || pokemon.name.includes(q)
 }

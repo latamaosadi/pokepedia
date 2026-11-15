@@ -30,7 +30,7 @@ function openSelected() {
 
 const selectPokemon = useDebounceFn((pokemon: IPokemon) => {
   selectedPokemon.value = pokemon
-}, 500)
+}, 100)
 
 // containerEl holds the RecycleScroller component; its root element is what scrolls.
 const scrollerEl = () => (containerEl.value as unknown as { $el?: HTMLElement } | null)?.$el
@@ -80,7 +80,6 @@ watch([() => pokemonStore.query, () => pokemonStore.type], () => {
 })
 
 onMounted(async () => {
-  await pokemonStore.getList()
   // Restore only once the list has a height, or the snap markers aren't in place yet.
   await until(viewHeight).toMatch((h) => h > 0, { timeout: 1000 })
   await nextTick()
@@ -113,12 +112,6 @@ onBeforeUnmount(() => {
     </div>
     <div class="flex flex-col gap-3">
       <ListFilter />
-      <p
-        v-if="pokemonStore.list.length && !pokemonStore.filtered.length"
-        class="font-pixel py-6 text-center text-xl text-neutral-500 dark:text-neutral-400"
-      >
-        No Pokémon match your search.
-      </p>
       <RecycleScroller
         :key="pokemonStore.filterKey"
         v-show="pokemonStore.filtered.length"
