@@ -1,6 +1,6 @@
 <script lang="ts">
 // Kept outside the component so it survives leaving and re-entering the view.
-let savedScrollTop = 0
+let savedIndex = 0
 </script>
 
 <script lang="ts" setup>
@@ -10,7 +10,7 @@ import { usePokemonStore } from '@/stores/pokemon'
 import type { IPokemon } from '@/types/pokemon'
 import * as dexScroll from '@/utils/dex-scroll'
 import { padNumber } from '@/utils/string'
-import { until, useDebounceFn, useElementSize, useScroll } from '@vueuse/core'
+import { until, useDebounceFn, useResizeObserver, useScroll } from '@vueuse/core'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch, type CSSProperties } from 'vue'
 import { useRouter } from 'vue-router'
 import { RecycleScroller } from 'vue-virtual-scroller'
@@ -42,8 +42,13 @@ const ITEM_SIZE = 56
 // Matches the list's py-4, so the zoomed first and last rows aren't clipped.
 const LIST_PADDING = 16
 const { y: scrollTop } = useScroll(scrollerEl)
-// border-box: the visible height including the padding, not just the content.
-const { height: viewHeight } = useElementSize(scrollerEl, undefined, { box: 'border-box' })
+// The visible height including the padding. A plain ResizeObserver rather than
+// useElementSize, which briefly resets the height to 0 while attaching and would put the
+// snap markers (and a restored position) in the wrong place for a frame.
+const viewHeight = ref(0)
+useResizeObserver(scrollerEl, ([entry]) => {
+  viewHeight.value = entry.borderBoxSize?.[0]?.blockSize ?? entry.contentRect.height
+})
 const geometry = computed(() => ({
   itemSize: ITEM_SIZE,
   count: pokemonStore.filtered.length,
@@ -80,19 +85,27 @@ watch([() => pokemonStore.query, () => pokemonStore.type], () => {
 })
 
 onMounted(async () => {
-  // Restore only once the list has a height, or the snap markers aren't in place yet.
+  // Restore the selected row rather than a pixel offset: the list can still settle after
+  // mounting, and the browser keeps it snapped to the same row's marker when it does.
+  // Wait for the list's height so the snap markers are in place too.
   await until(viewHeight).toMatch((h) => h > 0, { timeout: 1000 })
   await nextTick()
   const el = scrollerEl()
-  if (el) el.scrollTop = savedScrollTop
+  const index = Math.min(savedIndex, pokemonStore.filtered.length - 1)
+  if (!el || index <= 0) return
+  // Jump with snapping off: while the list is still mounting, the browser can snap the
+  // jump to a neighbouring row. Back on once it has settled, already on the right row.
+  el.style.scrollSnapType = 'none'
+  el.scrollTop = dexScroll.snapPoint(geometry.value, index)
+  requestAnimationFrame(() => requestAnimationFrame(() => (el.style.scrollSnapType = '')))
 })
 
 onBeforeUnmount(() => {
-  savedScrollTop = scrollerEl()?.scrollTop ?? savedScrollTop
+  savedIndex = selectedIndex.value
 })
 </script>
 <template>
-  <div class="grid h-[calc(100vh-48px)] items-center gap-6 sm:grid-flow-col">
+  <div class="grid h-[calc(100vh-48px)] items-center gap-6 sm:grid-cols-2">
     <div class="p-6">
       <p class="sr-only" aria-live="polite">{{ selectedPokemon?.formattedName }}</p>
       <RouterLink
