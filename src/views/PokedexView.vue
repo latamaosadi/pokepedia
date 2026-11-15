@@ -5,12 +5,12 @@ let savedScrollTop = 0
 
 <script lang="ts" setup>
 import PokemonCard from '@/components/PokemonCard.vue'
-import ZoomableItem from '@/components/Zoomable/ZoomableItem.vue'
 import { usePokemonStore } from '@/stores/pokemon'
 import type { IPokemon } from '@/types/pokemon'
+import * as dexScroll from '@/utils/dex-scroll'
 import { padNumber } from '@/utils/string'
-import { useDebounceFn } from '@vueuse/core'
-import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+import { until, useDebounceFn, useElementSize, useScroll } from '@vueuse/core'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch, type CSSProperties } from 'vue'
 import { useRouter } from 'vue-router'
 import { RecycleScroller } from 'vue-virtual-scroller'
 import 'vue-virtual-scroller/dist/vue-virtual-scroller.css'
@@ -34,8 +34,51 @@ const selectPokemon = useDebounceFn((pokemon: IPokemon) => {
 // containerEl holds the RecycleScroller component; its root element is what scrolls.
 const scrollerEl = () => (containerEl.value as unknown as { $el?: HTMLElement } | null)?.$el
 
+// Rows are a fixed height, so every position below is computed from the row index
+// and scroll offset instead of measured. Measuring went stale when the virtual list
+// recycled rows during fast scrollbar drags, leaving them un-zoomed.
+const ITEM_SIZE = 56
+// Matches the list's py-4, so the zoomed first and last rows aren't clipped.
+const LIST_PADDING = 16
+const { y: scrollTop } = useScroll(scrollerEl)
+// border-box: the visible height including the padding, not just the content.
+const { height: viewHeight } = useElementSize(scrollerEl, undefined, { box: 'border-box' })
+const geometry = computed(() => ({
+  itemSize: ITEM_SIZE,
+  count: pokemonStore.list.length,
+  viewHeight: viewHeight.value,
+  padding: LIST_PADDING,
+}))
+const selectedIndex = computed(() => dexScroll.selectedIndex(geometry.value, scrollTop.value))
+// Invisible markers at these offsets are the snap targets; unlike the rows they're
+// never virtualized away, so long jumps (End, restoring the position) still snap.
+const snapPoints = computed(() =>
+  pokemonStore.list.map((_, index) => dexScroll.snapPoint(geometry.value, index)),
+)
+
+function rowStyle(index: number): CSSProperties {
+  const distance =
+    Math.abs(dexScroll.offsetFromLine(geometry.value, index, scrollTop.value)) / (viewHeight.value || 1)
+  return {
+    transform: `scale(${Math.max(0.5, 1.4 - distance * 0.9)}) translateZ(0)`,
+    transformOrigin: 'center left',
+    opacity: Math.max(0.2, 1 - distance * 0.8),
+  }
+}
+
+watch(
+  [selectedIndex, () => pokemonStore.list.length],
+  ([index]) => {
+    const pokemon = pokemonStore.list[index]
+    if (pokemon) selectPokemon(pokemon)
+  },
+  { immediate: true },
+)
+
 onMounted(async () => {
   await pokemonStore.getList()
+  // Restore only once the list has a height, or the snap markers aren't in place yet.
+  await until(viewHeight).toMatch((h) => h > 0, { timeout: 1000 })
   await nextTick()
   const el = scrollerEl()
   if (el) el.scrollTop = savedScrollTop
@@ -63,23 +106,32 @@ onBeforeUnmount(() => {
       tabindex="0"
       aria-label="Pokémon list, use arrow keys to browse and Enter to open"
       @keydown.enter="openSelected"
-      class="scroller relative outline-none focus-visible:ring-4 focus-visible:ring-blue-400 h-full max-h-80 overflow-x-hidden overflow-y-auto rounded-xl bg-white py-4 pl-4 dark:bg-neutral-800"
+      class="scroller relative h-full max-h-80 snap-y snap-mandatory overflow-x-hidden overflow-y-auto rounded-xl bg-white py-4 pl-4 outline-none focus-visible:ring-4 focus-visible:ring-blue-400 dark:bg-neutral-800"
       :items="pokemonStore.list"
-      :item-size="56"
+      :item-size="ITEM_SIZE"
       key-field="number"
-      v-slot="{ item: pokemon }"
     >
-      <ZoomableItem :container="containerEl" @select="selectPokemon(pokemon)">
-        <template #default="{ style, selected }">
+      <template #before>
+        <div aria-hidden="true" class="pointer-events-none absolute top-0 left-0 w-px">
+          <div
+            v-for="(top, index) in snapPoints"
+            :key="index"
+            class="absolute h-px w-px snap-start"
+            :style="{ top: `${top}px` }"
+          ></div>
+        </div>
+      </template>
+      <template #default="{ item: pokemon, index }">
+        <div class="flex h-14 items-center">
           <div
             :class="[
-              'flex items-center gap-2 rounded-l-full transition-colors select-none',
+              'flex grow items-center gap-2 rounded-l-full transition-colors select-none',
               {
                 'bg-blue-400/30 inset-shadow-sm inset-shadow-white/80 dark:bg-indigo-700/60 dark:inset-shadow-white/20':
-                  selected,
+                  index === selectedIndex,
               },
             ]"
-            :style
+            :style="rowStyle(index)"
           >
             <div
               class="relative size-10 overflow-hidden rounded-full inset-shadow-sm inset-shadow-neutral-800/60 dark:inset-shadow-neutral-300"
@@ -108,8 +160,8 @@ onBeforeUnmount(() => {
               >
             </div>
           </div>
-        </template>
-      </ZoomableItem>
+        </div>
+      </template>
     </RecycleScroller>
   </div>
 </template>
