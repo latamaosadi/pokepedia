@@ -10,7 +10,13 @@ import { usePokemonStore } from '@/stores/pokemon'
 import type { IPokemon } from '@/types/pokemon'
 import * as dexScroll from '@/utils/dex-scroll'
 import { padNumber } from '@/utils/string'
-import { until, useDebounceFn, useEventListener, useResizeObserver } from '@vueuse/core'
+import {
+  until,
+  useDebounceFn,
+  useEventListener,
+  usePreferredReducedMotion,
+  useResizeObserver,
+} from '@vueuse/core'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch, type CSSProperties } from 'vue'
 import { useRouter } from 'vue-router'
 import { RecycleScroller } from 'vue-virtual-scroller'
@@ -22,6 +28,16 @@ const containerEl = ref<HTMLElement | null>(null)
 const selectedPokemon = ref<IPokemon>()
 const tilt = ref(0.5)
 const roll = ref(0.5)
+
+const reducedMotion = usePreferredReducedMotion()
+
+// Clicking a row scrolls it onto the selection line, which selects it.
+function selectRow(index: number) {
+  scrollerEl()?.scrollTo({
+    top: dexScroll.snapPoint(geometry.value, index),
+    behavior: reducedMotion.value === 'reduce' ? 'auto' : 'smooth',
+  })
+}
 
 function openSelected() {
   if (selectedPokemon.value)
@@ -166,7 +182,7 @@ onBeforeUnmount(() => {
           </div>
         </template>
         <template #default="{ item: pokemon, index }">
-          <div class="flex h-14 items-center">
+          <div class="flex h-14 cursor-pointer items-center" @click="selectRow(index)">
             <div
               :class="[
                 'flex grow items-center gap-2 rounded-l-full transition-colors select-none',
