@@ -10,7 +10,7 @@ import { usePokemonStore } from '@/stores/pokemon'
 import type { IPokemon } from '@/types/pokemon'
 import * as dexScroll from '@/utils/dex-scroll'
 import { padNumber } from '@/utils/string'
-import { until, useDebounceFn, useResizeObserver, useScroll } from '@vueuse/core'
+import { until, useDebounceFn, useEventListener, useResizeObserver } from '@vueuse/core'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch, type CSSProperties } from 'vue'
 import { useRouter } from 'vue-router'
 import { RecycleScroller } from 'vue-virtual-scroller'
@@ -39,9 +39,20 @@ const scrollerEl = () => (containerEl.value as unknown as { $el?: HTMLElement } 
 // and scroll offset instead of measured. Measuring went stale when the virtual list
 // recycled rows during fast scrollbar drags, leaving them un-zoomed.
 const ITEM_SIZE = 56
-// Matches the list's py-4, so the zoomed first and last rows aren't clipped.
+// At least this much space above the first row and below the last, so the zoomed first
+// and last rows aren't clipped; short lists get more (see dexScroll.listPadding).
 const LIST_PADDING = 16
-const { y: scrollTop } = useScroll(scrollerEl)
+// Tracked by hand rather than with useScroll, which keeps reporting the old list's offset
+// after a filter change remounts the list, until the new one is scrolled.
+const scrollTop = ref(0)
+useEventListener(
+  scrollerEl,
+  'scroll',
+  (event: Event) => {
+    scrollTop.value = (event.target as HTMLElement).scrollTop
+  },
+  { passive: true },
+)
 // The visible height including the padding. A plain ResizeObserver rather than
 // useElementSize, which briefly resets the height to 0 while attaching and would put the
 // snap markers (and a restored position) in the wrong place for a frame.
@@ -49,12 +60,15 @@ const viewHeight = ref(0)
 useResizeObserver(scrollerEl, ([entry]) => {
   viewHeight.value = entry.borderBoxSize?.[0]?.blockSize ?? entry.contentRect.height
 })
-const geometry = computed(() => ({
-  itemSize: ITEM_SIZE,
-  count: pokemonStore.filtered.length,
-  viewHeight: viewHeight.value,
-  padding: LIST_PADDING,
-}))
+const geometry = computed(() => {
+  const count = pokemonStore.filtered.length
+  return {
+    itemSize: ITEM_SIZE,
+    count,
+    viewHeight: viewHeight.value,
+    padding: dexScroll.listPadding(count, viewHeight.value, ITEM_SIZE, LIST_PADDING),
+  }
+})
 const selectedIndex = computed(() => dexScroll.selectedIndex(geometry.value, scrollTop.value))
 // Invisible markers at these offsets are the snap targets; unlike the rows they're
 // never virtualized away, so long jumps (End, restoring the position) still snap.
@@ -78,11 +92,13 @@ watch(
   { immediate: true },
 )
 
-// A new filter means a new list; start it from the top.
-watch([() => pokemonStore.query, () => pokemonStore.type], () => {
-  const el = scrollerEl()
-  if (el) el.scrollTop = 0
-})
+// A new filter means a new list (remounted, see filterKey); start it from the top.
+watch(
+  () => pokemonStore.filterKey,
+  () => {
+    scrollTop.value = 0
+  },
+)
 
 onMounted(async () => {
   // Restore the selected row rather than a pixel offset: the list can still settle after
@@ -97,6 +113,7 @@ onMounted(async () => {
   // jump to a neighbouring row. Back on once it has settled, already on the right row.
   el.style.scrollSnapType = 'none'
   el.scrollTop = dexScroll.snapPoint(geometry.value, index)
+  scrollTop.value = el.scrollTop
   requestAnimationFrame(() => requestAnimationFrame(() => (el.style.scrollSnapType = '')))
 })
 
@@ -132,7 +149,8 @@ onBeforeUnmount(() => {
         tabindex="0"
         aria-label="Pokémon list, use arrow keys to browse and Enter to open"
         @keydown.enter="openSelected"
-        class="scroller relative h-full max-h-80 snap-y snap-mandatory overflow-x-hidden overflow-y-auto rounded-xl bg-white py-4 pl-4 outline-none focus-visible:ring-4 focus-visible:ring-blue-400 dark:bg-neutral-800"
+        class="scroller relative h-80 snap-y snap-mandatory overflow-x-hidden overflow-y-auto rounded-xl bg-white pl-4 outline-none focus-visible:ring-4 focus-visible:ring-blue-400 dark:bg-neutral-800"
+        :style="{ paddingBlock: `${geometry.padding}px` }"
         :items="pokemonStore.filtered"
         :item-size="ITEM_SIZE"
         key-field="number"

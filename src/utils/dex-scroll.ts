@@ -49,3 +49,11 @@ export function snapPoint(geometry: ListGeometry, index: number) {
   const atBottom = (center - viewHeight + rowCenter(geometry, 0) + max) / 2
   return Math.min(max, Math.max(0, Math.min(Math.max(atTop, atMiddle), atBottom)))
 }
+
+/**
+ * Space above the first row and below the last. Short lists (search results) get more,
+ * so they can still scroll far enough for every row to reach the selection line; a list
+ * that can't scroll would leave the line stuck on its last row.
+ */
+export const listPadding = (count: number, viewHeight: number, itemSize: number, minimum: number) =>
+  Math.max(minimum, viewHeight / 2 - (itemSize / 4) * (count + 1))

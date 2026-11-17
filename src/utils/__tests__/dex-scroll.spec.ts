@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import {
+  listPadding,
   maxScroll,
   offsetFromLine,
   selectedIndex,
@@ -8,11 +9,20 @@ import {
   type ListGeometry,
 } from '../dex-scroll'
 
+// Search results: short lists get the padding the Pokédex gives them.
+const searchResults = (count: number): ListGeometry => ({
+  itemSize: 56,
+  count,
+  viewHeight: 320,
+  padding: listPadding(count, 320, 56, 16),
+})
+
 const geometries: ListGeometry[] = [
   { itemSize: 56, count: 1025, viewHeight: 320, padding: 16 },
   { itemSize: 56, count: 1025, viewHeight: 777, padding: 16 },
   { itemSize: 56, count: 1025, viewHeight: 320, padding: 0 },
   { itemSize: 56, count: 12, viewHeight: 320, padding: 16 },
+  ...[1, 2, 3, 6, 9].map(searchResults),
 ]
 
 describe.each(geometries)('Pokédex list geometry %o', (geometry) => {
@@ -37,6 +47,8 @@ describe.each(geometries)('Pokédex list geometry %o', (geometry) => {
     const edge = geometry.padding + geometry.itemSize / 2
     expect(selectionLine(geometry, 0)).toBe(edge)
     expect(selectionLine(geometry, maxScroll(geometry))).toBe(geometry.viewHeight - edge)
-    expect(selectionLine(geometry, maxScroll(geometry) / 2)).toBe(geometry.viewHeight / 2)
+    if (geometry.count > 1) {
+      expect(selectionLine(geometry, maxScroll(geometry) / 2)).toBe(geometry.viewHeight / 2)
+    }
   })
 })
