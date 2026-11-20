@@ -1,6 +1,6 @@
 import { fileURLToPath, URL } from 'node:url'
 
-import { defineConfig } from 'vite'
+import { createLogger, defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import vueDevTools from 'vite-plugin-vue-devtools'
 import tailwindcss from '@tailwindcss/vite'
@@ -34,9 +34,24 @@ const pwaOptions: Partial<VitePWAOptions> = {
 }
 
 // https://vite.dev/config/
+// Vue's dev-only HTML nesting check predates the customizable <select> (used by the type
+// filter), which allows a <button> in a <select> and images in an <option>. The app has no
+// SSR, so the hydration risk it warns about doesn't apply. Only these two exact warnings
+// are dropped; any other nesting problem is still reported.
+const logger = createLogger()
+const warn = logger.warn
+logger.warn = (message, options) => {
+  if (/<(button> cannot be child of <select|img> cannot be child of <option)>/.test(message)) return
+  warn(message, options)
+}
+
 export default defineConfig({
+  customLogger: logger,
   plugins: [
-    vue(),
+    vue({
+      // <selectedcontent> belongs to the browser's customizable <select>, not a component.
+      template: { compilerOptions: { isCustomElement: (tag) => tag === 'selectedcontent' } },
+    }),
     vueDevTools(),
     tailwindcss(),
     webfontDownload(),

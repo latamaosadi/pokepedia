@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { usePokemonStore } from '@/stores/pokemon'
 import { PokemonTypeEnum } from '@/types/pokemon'
+import { typeIcon } from '@/utils/sprite'
 import { titleCase } from '@/utils/string'
 import ShinyToggle from './ShinyToggle.vue'
 
@@ -38,10 +39,19 @@ const views = [
       <select
         v-model="pokemonStore.type"
         aria-label="Filter by type"
-        class="select-chevron rounded-lg bg-white py-2 pr-10 pl-3 text-neutral-800 shadow-sm outline-none focus-visible:ring-4 focus-visible:ring-blue-400 dark:bg-neutral-800 dark:text-neutral-100"
+        class="type-select select-chevron rounded-lg bg-white py-2 pr-10 pl-3 text-neutral-800 shadow-sm outline-none focus-visible:ring-4 focus-visible:ring-blue-400 dark:bg-neutral-800 dark:text-neutral-100"
       >
-        <option value="">All types</option>
-        <option v-for="t in types" :key="t" :value="t">{{ titleCase(t) }}</option>
+        <button><selectedcontent></selectedcontent></button>
+        <option value="" style="--type-color: var(--color-neutral-500)">All types</option>
+        <option
+          v-for="t in types"
+          :key="t"
+          :value="t"
+          :style="{ '--type-color': `var(--color-type-${t})` }"
+        >
+          <img :src="typeIcon(t)" alt="" width="20" height="20" />
+          {{ titleCase(t) }}
+        </option>
       </select>
       <button
         type="button"
