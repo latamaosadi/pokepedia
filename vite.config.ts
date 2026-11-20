@@ -6,6 +6,10 @@ import vueDevTools from 'vite-plugin-vue-devtools'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA, VitePWAOptions } from 'vite-plugin-pwa'
 import webfontDownload from 'vite-plugin-webfont-dl'
+import { seoPages } from './scripts/seo-pages'
+
+// Where the site is published, for canonical links, link previews and the sitemap.
+const SITE_URL = process.env.SITE_URL ?? 'https://pokepedia.latamaosadi.com'
 
 const pwaOptions: Partial<VitePWAOptions> = {
   manifest: {
@@ -19,6 +23,8 @@ const pwaOptions: Partial<VitePWAOptions> = {
   pwaAssets: { image: 'public/logo.svg' },
   workbox: {
     globPatterns: ['**/*.{html,js,css,png,svg,ico,woff,woff2}'],
+    // Per-page HTML exists for search engines and link previews; the app itself never loads it.
+    globIgnores: ['dex.html', 'dex/**'],
     runtimeCaching: [
       {
         urlPattern: /^https:\/\/raw\.githubusercontent\.com\/.*/i,
@@ -56,6 +62,7 @@ export default defineConfig({
     tailwindcss(),
     webfontDownload(),
     VitePWA(pwaOptions),
+    seoPages(SITE_URL),
   ],
   resolve: {
     alias: {
