@@ -3,13 +3,15 @@ import ListFilter from '@/components/ListFilter.vue'
 import PokemonCard from '@/components/PokemonCard.vue'
 import { useGridItems } from '@/composables/grid-items'
 import { usePokemonStore } from '@/stores/pokemon'
-import { useElementSize } from '@vueuse/core'
+import { useElementSize, useTitle } from '@vueuse/core'
 import { ref, watch } from 'vue'
 import { RecycleScroller } from 'vue-virtual-scroller'
 
 import 'vue-virtual-scroller/dist/vue-virtual-scroller.css'
 
 const pokemonStore = usePokemonStore()
+// Matches the title of the prerendered page (scripts/seo-pages.ts).
+useTitle('Poképedia – Browse all Pokémon')
 
 // A new filter means a new list; start it from the top.
 watch([() => pokemonStore.query, () => pokemonStore.type], () => window.scrollTo({ top: 0 }))

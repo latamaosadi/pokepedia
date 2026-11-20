@@ -16,6 +16,7 @@ import {
   useEventListener,
   usePreferredReducedMotion,
   useResizeObserver,
+  useTitle,
 } from '@vueuse/core'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch, type CSSProperties } from 'vue'
 import { useRouter } from 'vue-router'
@@ -23,6 +24,8 @@ import { RecycleScroller } from 'vue-virtual-scroller'
 import 'vue-virtual-scroller/dist/vue-virtual-scroller.css'
 
 const pokemonStore = usePokemonStore()
+// Matches the title of the prerendered page (scripts/seo-pages.ts).
+useTitle('Pokédex · Poképedia')
 const router = useRouter()
 const containerEl = ref<HTMLElement | null>(null)
 const selectedPokemon = ref<IPokemon>()
