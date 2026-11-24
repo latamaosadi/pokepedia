@@ -58,6 +58,7 @@ export interface IForm {
   name: string
   types: IType[]
   height: string
+  heightMeters: number
   weight: string
   sprite: string
   artwork: string

@@ -72,6 +72,7 @@ async function getForm(url: string, speciesName: string): Promise<IForm> {
     name: formatFormName(pokemon.name, speciesName),
     types: pokemon.types.map((slot: Raw) => ({ name: slot.type.name })),
     height: `${pokemon.height / 10} m`,
+    heightMeters: pokemon.height / 10,
     weight: `${pokemon.weight / 10} kg`,
     sprite: defaultSprite(pokemon.id),
     artwork: artwork(pokemon.id),

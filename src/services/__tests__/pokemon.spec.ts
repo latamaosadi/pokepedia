@@ -97,6 +97,7 @@ describe('getPokemonInfo', () => {
         { name: 'Mega Charizard X', types: [{ name: 'fire' }, { name: 'dragon' }], height: '1.7 m', weight: '110.5 kg' },
       ])
     expect(info.forms[0]).toMatchObject({
+      heightMeters: 1.7,
       stats: [
         { name: 'HP', value: 78 },
         { name: 'Sp. Atk', value: 109 },

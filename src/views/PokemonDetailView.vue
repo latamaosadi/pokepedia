@@ -25,6 +25,7 @@ function fetchInfo(id: string) {
 import EvolutionChain from '@/components/EvolutionChain.vue'
 import PokemonCard from '@/components/PokemonCard.vue'
 import ShinyToggle from '@/components/ShinyToggle.vue'
+import SizeComparison from '@/components/SizeComparison.vue'
 import TypeBadge from '@/components/TypeBadge.vue'
 import { lastListView } from '@/router'
 import { usePokemonStore } from '@/stores/pokemon'
@@ -522,6 +523,11 @@ watch(id, (value) => value && load(value), { immediate: true })
               <dd>{{ form?.weight }}</dd>
             </div>
           </dl>
+
+          <section v-if="form && card?.artwork">
+            <h2 class="font-inter mb-2 text-2xl font-black">Size</h2>
+            <SizeComparison :name="form.name" :height="form.heightMeters" :artwork="card.artwork" />
+          </section>
 
           <section v-if="form?.abilities.length">
             <h2 class="font-inter mb-2 text-2xl font-black">Abilities</h2>
