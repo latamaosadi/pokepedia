@@ -15,6 +15,14 @@ Ideas for improving Poképedia, ranked by value against effort.
 - [x] **Type matchups.** The detail page shows damage taken from each type (4×, 2×, ½×, ¼×, 0×) for the selected form. Abilities like Levitate aren't factored in.
 - [x] **Favorites.** A ☆ button on detail pages and a Favorites filter in the lists, stored in `localStorage`. A team builder (6 Pokémon) is still open.
 - [x] **Faster Pokédex card.** The big card now follows the list after 100ms instead of 500ms.
+- [x] **Size comparison.** The detail page draws the Pokémon next to a 1.6 m trainer, to scale. For serpents and fish (PokeAPI shapes `squiggle` and `fish`) the listed height is a length, so the body is drawn that long and labelled "m long". The serpent length is an estimate from the pose (width + height of the artwork).
+- [x] **Page-turn swipe.** On phones, swiping the detail page peels it like paper to the previous or next Pokémon, and letting go early cancels.
+- [x] **Pokédex fixes.** Snap scrolling, rows you can click to select, and lists that keep their size when a search returns only a few results.
+- [x] **Type picker with symbols.** The type filter is a grid of type symbols, with the selected type highlighted.
+
+## Discoverability
+
+- [x] **A page per Pokémon.** The build writes `dex/<name>.html` with its own title, description and preview image, plus `sitemap.xml` and `robots.txt`. Each view sets its page title.
 
 ## Loose ends
 
