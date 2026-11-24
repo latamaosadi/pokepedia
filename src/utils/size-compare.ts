@@ -9,6 +9,23 @@ export function sizeScale(pokemonHeight: number, boxHeight: number, trainerHeigh
   return { pokemon: pokemonHeight * pxPerMetre, trainer: trainerHeight * pxPerMetre }
 }
 
+/** Body shapes whose Pokédex "height" is really a length: serpents (Arbok) and fish (Wailord). */
+export const LENGTH_SHAPES = ['squiggle', 'fish']
+
+/**
+ * How tall a Pokémon stands in its artwork's pose. For long Pokémon the listed height is the
+ * body's length: fish are drawn side-on, so it's their longest visible side; serpents coil
+ * or rear up, so their body is taken to run along the width and up the height.
+ */
+export function poseHeight(height: number, shape: string, { top, bottom, left, right }: Bounds) {
+  const tall = bottom - top
+  const wide = right - left
+  if (shape === 'fish') return (height * tall) / Math.max(wide, tall)
+  // ponytail: width + height roughly traces a coiled body; measuring the body's centre line would be exact.
+  if (shape === 'squiggle') return (height * tall) / (wide + tall)
+  return height
+}
+
 /** Where an image's visible content sits, as fractions of its width and height. */
 export interface Bounds {
   top: number

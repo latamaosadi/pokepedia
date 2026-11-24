@@ -526,7 +526,12 @@ watch(id, (value) => value && load(value), { immediate: true })
 
           <section v-if="form && card?.artwork">
             <h2 class="font-inter mb-2 text-2xl font-black">Size</h2>
-            <SizeComparison :name="form.name" :height="form.heightMeters" :artwork="card.artwork" />
+            <SizeComparison
+              :name="form.name"
+              :height="form.heightMeters"
+              :shape="info.shape"
+              :artwork="card.artwork"
+            />
           </section>
 
           <section v-if="form?.abilities.length">

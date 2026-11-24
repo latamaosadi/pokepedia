@@ -14,6 +14,7 @@ const responses: Record<string, unknown> = {
     names: [{ language: ref('ja'), name: 'リザードン' }, { language: en, name: 'Charizard' }],
     genera: [{ language: en, genus: 'Flame Pokémon' }],
     color: ref('red'),
+    shape: ref('upright'),
     flavor_text_entries: [
       { language: en, flavor_text: 'Spits fire that\nis hot enough to\nmelt boulders.\fKnown to cause' },
     ],
@@ -87,6 +88,7 @@ describe('getPokemonInfo', () => {
       formattedName: 'Charizard',
       number: 6,
       color: 'red',
+      shape: 'upright',
       genus: 'Flame Pokémon',
       description: 'Spits fire that is hot enough to melt boulders. Known to cause',
     })

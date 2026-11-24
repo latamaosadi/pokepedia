@@ -104,6 +104,7 @@ export async function getPokemonInfo(id: string): Promise<IPokemonInfo> {
     formattedName: species.names.find(isEnglish)?.name || titleCase(species.name),
     number: species.id,
     color: species.color.name,
+    shape: species.shape?.name ?? '',
     genus: species.genera.find(isEnglish)?.genus || '',
     description: (species.flavor_text_entries.find(isEnglish)?.flavor_text || '').replace(
       /\s+/g,

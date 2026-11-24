@@ -1,12 +1,20 @@
 <script setup lang="ts">
-import { measureBounds, sizeScale, TRAINER_HEIGHT, type Bounds } from '@/utils/size-compare'
+import {
+  LENGTH_SHAPES,
+  measureBounds,
+  poseHeight,
+  sizeScale,
+  TRAINER_HEIGHT,
+  type Bounds,
+} from '@/utils/size-compare'
 import { useElementSize } from '@vueuse/core'
 import { computed, ref, watch } from 'vue'
 
-const { name, height, artwork } = defineProps<{
+const { name, height, shape, artwork } = defineProps<{
   name: string
-  /** In metres. */
+  /** In metres; a length for long shapes (see LENGTH_SHAPES). */
   height: number
+  shape: string
   artwork: string
 }>()
 
@@ -29,22 +37,28 @@ watch(
 
 const container = ref<HTMLElement>()
 const { width: available } = useElementSize(container)
-const visible = computed(() => bounds.value ?? { top: 0, bottom: 1, left: 0, right: 1 })
+const visible = computed(
+  () => bounds.value ?? { top: 0, bottom: 1, left: 0, right: 1 },
+)
+const lengthwise = computed(() => LENGTH_SHAPES.includes(shape))
+const drawnHeight = computed(() => poseHeight(height, shape, visible.value))
 
 // The drawing's height: shrunk, trainer included, when a wide Pokémon (Wailord) wouldn't
 // fit beside the trainer on a narrow screen.
 const boxHeight = computed(() => {
-  const { pokemon } = sizeScale(height, BOX_HEIGHT)
+  const { pokemon } = sizeScale(drawnHeight.value, BOX_HEIGHT)
   const { top, bottom, left, right } = visible.value
   const artWidth = (pokemon * (right - left)) / (bottom - top)
   const room = available.value - TRAINER_COLUMN - GAP
-  return available.value > 0 && artWidth > room ? BOX_HEIGHT * Math.max(room, 1) / artWidth : BOX_HEIGHT
+  return available.value > 0 && artWidth > room
+    ? (BOX_HEIGHT * Math.max(room, 1)) / artWidth
+    : BOX_HEIGHT
 })
 
-const scale = computed(() => sizeScale(height, boxHeight.value))
+const scale = computed(() => sizeScale(drawnHeight.value, boxHeight.value))
 
 // Scales the artwork so its visible part (not its transparent margins) is exactly the
-// Pokémon's height, and crops the box to that visible part.
+// Pokémon's height in its pose, and crops the box to that visible part.
 const art = computed(() => {
   const size = scale.value.pokemon / (visible.value.bottom - visible.value.top)
   return {
@@ -62,7 +76,8 @@ const art = computed(() => {
 })
 
 const description = computed(
-  () => `${name} is ${height} m tall, shown next to a ${TRAINER_HEIGHT} m trainer.`,
+  () =>
+    `${name} is ${height} m ${lengthwise.value ? 'long' : 'tall'}, shown next to a ${TRAINER_HEIGHT} m trainer.`,
 )
 </script>
 
@@ -73,7 +88,10 @@ const description = computed(
       :aria-label="description"
       class="grid w-fit max-w-full grid-cols-[auto_auto] justify-center gap-x-10 overflow-hidden"
     >
-      <div class="flex items-end justify-center" :style="{ height: `${boxHeight}px` }">
+      <div
+        class="flex items-end justify-center"
+        :style="{ height: `${boxHeight}px` }"
+      >
         <svg
           viewBox="0 2 40 98"
           class="w-auto fill-neutral-400 dark:fill-neutral-500"
@@ -86,19 +104,38 @@ const description = computed(
           />
         </svg>
       </div>
-      <div class="flex items-end justify-center" :style="{ height: `${boxHeight}px` }">
-        <div class="relative transition-opacity" :class="{ 'opacity-0': bounds === undefined }" :style="art.box">
-          <img :src="artwork" alt="" class="absolute max-w-none" :style="art.image" />
+      <div
+        class="flex items-end justify-center"
+        :style="{ height: `${boxHeight}px` }"
+      >
+        <div
+          class="relative transition-opacity"
+          :class="{ 'opacity-0': bounds === undefined }"
+          :style="art.box"
+        >
+          <img
+            :src="artwork"
+            alt=""
+            class="absolute max-w-none"
+            :style="art.image"
+          />
         </div>
       </div>
-      <div class="col-span-2 mt-0.5 border-t-2 border-neutral-300 dark:border-neutral-600"></div>
+      <div
+        class="col-span-2 mt-0.5 border-t-2 border-neutral-300 dark:border-neutral-600"
+      ></div>
       <figcaption class="contents">
         <span
           class="font-pixel mt-1 text-center text-lg whitespace-nowrap text-neutral-500 dark:text-neutral-400"
         >
           Trainer · {{ TRAINER_HEIGHT }} m
         </span>
-        <span class="font-pixel mt-1 text-center text-lg">{{ name }} · {{ height }} m</span>
+        <span class="font-pixel mt-1 text-center text-lg"
+          >{{ name }} ·
+          <span class="whitespace-nowrap"
+            >{{ height }} m{{ lengthwise ? ' long' : '' }}</span
+          ></span
+        >
       </figcaption>
     </figure>
   </div>

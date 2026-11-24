@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { opaqueBounds, sizeScale, TRAINER_HEIGHT } from '../size-compare'
+import { opaqueBounds, poseHeight, sizeScale, TRAINER_HEIGHT } from '../size-compare'
 
 describe('sizeScale', () => {
   test('a Pokémon shorter than the trainer: the trainer fills the box', () => {
@@ -43,5 +43,25 @@ describe('opaqueBounds', () => {
 
   test('returns null for a fully transparent image', () => {
     expect(opaqueBounds(new Uint8ClampedArray(10 * 10 * 4), 10, 10)).toBeNull()
+  })
+})
+
+describe('poseHeight', () => {
+  const box = (width: number, height: number) => ({ top: 0, bottom: height, left: 0, right: width })
+
+  test('upright Pokémon stand at their listed height', () => {
+    expect(poseHeight(1.7, 'upright', box(0.9, 0.8))).toBe(1.7)
+  })
+
+  test("a fish's length is its longest side", () => {
+    // Wailord, 14.5 m long, drawn twice as long as it is tall.
+    expect(poseHeight(14.5, 'fish', box(1, 0.5))).toBeCloseTo(7.25)
+    // A fish drawn upright stands at its full length.
+    expect(poseHeight(1, 'fish', box(0.5, 1))).toBe(1)
+  })
+
+  test("a serpent's length runs along its width and up its height", () => {
+    // Arbok, 3.5 m long, reared up in a pose as tall as it is wide.
+    expect(poseHeight(3.5, 'squiggle', box(0.6, 0.6))).toBeCloseTo(1.75)
   })
 })

@@ -78,6 +78,8 @@ export interface IPokemonInfo {
   formattedName: string
   number: number
   color: string
+  /** PokeAPI body shape, e.g. 'upright', 'squiggle' (serpentine), 'fish'. */
+  shape: string
   genus: string
   description: string
   forms: IForm[]
