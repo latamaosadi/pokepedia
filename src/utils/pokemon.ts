@@ -61,9 +61,10 @@ export function matchesFilter(pokemon: IPokemon, query: string, type: string) {
 
 /**
  * A Pokémon's types in a generation. `pastTypes` lists [last generation, types] for the
- * few whose types changed (Clefairy was Normal until Gen 5), oldest first.
+ * few whose types changed (Clefairy was Normal until Gen 5).
  */
 export function typesInGeneration<T>(types: T[], pastTypes?: [number, T[]][], generation?: number) {
   if (generation === undefined) return types
-  return pastTypes?.find(([last]) => generation <= last)?.[1] ?? types
+  const past = pastTypes?.filter(([last]) => generation <= last).sort((a, b) => a[0] - b[0])
+  return past?.[0]?.[1] ?? types
 }

@@ -18,6 +18,7 @@ const STAT_LABELS: Record<string, string> = {
   'special-attack': 'Sp. Atk',
   'special-defense': 'Sp. Def',
   speed: 'Speed',
+  special: 'Special',
 }
 
 // Varieties that are battle-only or duplicates of another entry.
@@ -65,26 +66,46 @@ function buildEvolution(node: Raw): IEvolutionChain {
   }
 }
 
+const toType = (slot: Raw) => ({ name: slot.type.name })
+const toStat = (slot: Raw) => ({
+  name: STAT_LABELS[slot.stat.name] ?? titleCase(slot.stat.name),
+  value: slot.base_stat,
+})
+const toAbility = (slot: Raw) => ({
+  name: titleCase(slot.ability.name),
+  hidden: slot.is_hidden,
+  slot: slot.slot,
+})
+
 async function getForm(url: string, speciesName: string): Promise<IForm> {
   const pokemon = await getJson(url)
   return {
     id: pokemon.id,
     name: formatFormName(pokemon.name, speciesName),
-    types: pokemon.types.map((slot: Raw) => ({ name: slot.type.name })),
+    types: pokemon.types.map(toType),
     height: `${pokemon.height / 10} m`,
     heightMeters: pokemon.height / 10,
     weight: `${pokemon.weight / 10} kg`,
     sprite: defaultSprite(pokemon.id),
     artwork: artwork(pokemon.id),
-    stats: pokemon.stats.map((slot: Raw) => ({
-      name: STAT_LABELS[slot.stat.name] ?? titleCase(slot.stat.name),
-      value: slot.base_stat,
-    })),
-    abilities: pokemon.abilities.map((slot: Raw) => ({
-      name: titleCase(slot.ability.name),
-      hidden: slot.is_hidden,
-    })),
+    stats: pokemon.stats.map(toStat),
+    abilities: pokemon.abilities.map(toAbility),
     cry: pokemon.cries?.latest || pokemon.cries?.legacy || undefined,
+    pastTypes: (pokemon.past_types ?? []).map((past: Raw) => [
+      getIdFromUrl(past.generation.url),
+      past.types.map(toType),
+    ]),
+    pastStats: (pokemon.past_stats ?? []).map((past: Raw) => [
+      getIdFromUrl(past.generation.url),
+      past.stats.map(toStat),
+    ]),
+    pastAbilities: (pokemon.past_abilities ?? []).map((past: Raw) => [
+      getIdFromUrl(past.generation.url),
+      past.abilities.map((slot: Raw) => ({
+        slot: slot.slot,
+        ability: slot.ability ? toAbility(slot) : null,
+      })),
+    ]),
   }
 }
 

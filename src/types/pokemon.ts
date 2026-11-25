@@ -39,6 +39,8 @@ export interface IPokemon {
   number: number
   /** Number in the selected game's regional Pokédex. */
   dexNumber?: number
+  /** Which of the game's Pokédexes that number is in, for games with several (Galar, Isle of Armor…). */
+  dexName?: string
   sprite: string
   artwork?: string
   color?: string
@@ -53,7 +55,11 @@ export interface IStat {
 export interface IAbility {
   name: string
   hidden: boolean
+  slot: number
 }
+
+/** [last generation, value]: what something was up to and including that generation. */
+export type Past<T> = [number, T]
 
 export interface IForm {
   id: number
@@ -67,6 +73,12 @@ export interface IForm {
   stats: IStat[]
   abilities: IAbility[]
   cry?: string
+  // What changed since older games, for showing a form as it was in the selected game.
+  pastTypes: Past<IType[]>[]
+  /** Only the stats that changed; Gen 1 has a single Special stat. */
+  pastStats: Past<IStat[]>[]
+  /** By slot; null where the slot was empty (no hidden ability yet). */
+  pastAbilities: Past<{ slot: number; ability: IAbility | null }[]>[]
 }
 
 export interface IEvolutionChain extends IPokemon {

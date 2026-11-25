@@ -49,7 +49,8 @@ function regionalDex(game: IGame): IPokemon[] {
       if (!pokemon || seen.has(number)) return []
       seen.add(number)
       const types = typesInGeneration(pokemon.types ?? [], pastTypes.get(number), game.generation)
-      return [{ ...pokemon, dexNumber: dex.start + index, types }]
+      const dexName = game.dexes.length > 1 ? titleCase(dex.name) : undefined
+      return [{ ...pokemon, dexNumber: dex.start + index, dexName, types }]
     }),
   )
 }

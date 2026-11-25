@@ -40,6 +40,13 @@ const responses: Record<string, unknown> = {
       { is_hidden: true, ability: ref('solar-power') },
     ],
     cries: { latest: 'https://example.test/6.ogg', legacy: null },
+    past_stats: [{ generation: ref('generation-i', 'generation/1'), stats: [{ base_stat: 85, stat: ref('special') }] }],
+    past_abilities: [
+      {
+        generation: ref('generation-iv', 'generation/4'),
+        abilities: [{ is_hidden: true, slot: 3, ability: null }],
+      },
+    ],
   },
   [`${API}/pokemon/10034/`]: {
     id: 10034,
@@ -109,6 +116,10 @@ describe('getPokemonInfo', () => {
         { name: 'Solar Power', hidden: true },
       ],
       cry: 'https://example.test/6.ogg',
+      // Kept to show the form as it was in older games.
+      pastTypes: [],
+      pastStats: [[1, [{ name: 'Special', value: 85 }]]],
+      pastAbilities: [[4, [{ slot: 3, ability: null }]]],
     })
     expect(info.forms[1].cry).toBeUndefined()
 

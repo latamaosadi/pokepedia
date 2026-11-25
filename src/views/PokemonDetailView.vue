@@ -32,6 +32,7 @@ import { usePokemonStore } from '@/stores/pokemon'
 import type { IPokemon, IPokemonInfo, PokemonType } from '@/types/pokemon'
 import { artwork, defaultSprite } from '@/utils/sprite'
 import { padNumber, titleCase } from '@/utils/string'
+import { formInGeneration } from '@/utils/game'
 import { defensiveMatchups } from '@/utils/type-matchups'
 import { foldPage, gradientFrom, polygonPath } from '@/utils/page-fold'
 import {
@@ -57,6 +58,11 @@ const swipeEl = ref<HTMLElement>()
 const form = computed(
   () => info.value?.forms.find((f) => f.id === formId.value) ?? info.value?.forms[0],
 )
+// The selected game's generation, and the form's types, stats and abilities as they were then.
+const generation = computed(() => pokemonStore.game?.generation)
+const shown = computed(() => form.value && formInGeneration(form.value, generation.value))
+// This Pokémon's entry in the selected game's Pokédex, if it's in it.
+const dexEntry = computed(() => pokemonStore.dex.find((p) => p.number === info.value?.number))
 const card = computed((): IPokemon | undefined =>
   info.value && form.value
     ? {
@@ -66,7 +72,7 @@ const card = computed((): IPokemon | undefined =>
         sprite: form.value.sprite,
         artwork: artwork(form.value.id, pokemonStore.shiny),
         color: info.value.color,
-        types: form.value.types,
+        types: shown.value?.types,
       }
     : undefined,
 )
@@ -76,10 +82,10 @@ const canPlayCry =
   typeof Audio !== 'undefined' && new Audio().canPlayType('audio/ogg; codecs=vorbis') !== ''
 // Highest base stat in the games, so bars share one scale across Pokémon.
 const MAX_BASE_STAT = 255
-const statsTotal = computed(() => form.value?.stats.reduce((sum, stat) => sum + stat.value, 0) ?? 0)
+const statsTotal = computed(() => shown.value?.stats.reduce((sum, stat) => sum + stat.value, 0) ?? 0)
 
 const matchups = computed(() =>
-  defensiveMatchups(form.value?.types.map((t) => t.name) ?? []).map(({ multiplier, types }) => ({
+  defensiveMatchups(shown.value?.types.map((t) => t.name) ?? [], generation.value).map(({ multiplier, types }) => ({
     label: { 4: '4×', 2: '2×', 0.5: '½×', 0.25: '¼×', 0: '0×' }[multiplier],
     types: types.map((name) => ({ name: name as PokemonType })),
   })),
@@ -476,6 +482,15 @@ watch(id, (value) => value && load(value), { immediate: true })
           <header>
             <p class="font-bold text-neutral-500 dark:text-neutral-400">
               #{{ padNumber(info.number) }}
+              <template v-if="pokemonStore.game">
+                ·
+                <template v-if="dexEntry?.dexNumber !== undefined">
+                  {{ pokemonStore.game.name }}
+                  <template v-if="dexEntry.dexName">({{ dexEntry.dexName }})</template>
+                  #{{ padNumber(dexEntry.dexNumber) }}
+                </template>
+                <template v-else>Not in {{ pokemonStore.game.name }}'s Pokédex</template>
+              </template>
             </p>
             <div class="flex flex-wrap items-center gap-3">
               <h1 class="font-inter text-4xl font-black">{{ info.formattedName }}</h1>
@@ -536,11 +551,11 @@ watch(id, (value) => value && load(value), { immediate: true })
             />
           </section>
 
-          <section v-if="form?.abilities.length">
+          <section v-if="shown?.abilities.length">
             <h2 class="font-inter mb-2 text-2xl font-black">Abilities</h2>
             <ul class="font-pixel flex flex-wrap gap-2 text-xl">
               <li
-                v-for="ability in form.abilities"
+                v-for="ability in shown.abilities"
                 :key="ability.name"
                 class="rounded-lg bg-white px-3 py-1 shadow-sm dark:bg-neutral-800"
               >
@@ -552,10 +567,10 @@ watch(id, (value) => value && load(value), { immediate: true })
             </ul>
           </section>
 
-          <section v-if="form?.stats.length">
+          <section v-if="shown?.stats.length">
             <h2 class="font-inter mb-2 text-2xl font-black">Base stats</h2>
             <dl class="font-pixel grid max-w-md grid-cols-[6rem_3rem_1fr] items-center gap-x-3 gap-y-1 text-xl">
-              <template v-for="stat in form.stats" :key="stat.name">
+              <template v-for="stat in shown.stats" :key="stat.name">
                 <dt class="text-neutral-500 dark:text-neutral-400">{{ stat.name }}</dt>
                 <dd class="text-right">{{ stat.value }}</dd>
                 <dd class="h-3 overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-800">
