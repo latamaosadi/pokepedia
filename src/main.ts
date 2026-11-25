@@ -2,6 +2,7 @@ import './assets/main.css'
 
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
+import { registerSW } from 'virtual:pwa-register'
 
 import App from './App.vue'
 import router from './router'
@@ -12,3 +13,7 @@ app.use(createPinia())
 app.use(router)
 
 app.mount('#app')
+
+// The service worker serves the cached app first, so a new deployment only arrives in the
+// background. Reload once it has taken over, instead of on the visit after.
+registerSW({ immediate: true })
