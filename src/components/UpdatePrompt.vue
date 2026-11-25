@@ -1,17 +1,42 @@
 <script setup lang="ts">
+import { useEventListener } from '@vueuse/core'
 import { useRegisterSW } from 'virtual:pwa-register/vue'
 
 const CHECK_EVERY = 60 * 60 * 1000
+
+let registration: ServiceWorkerRegistration | undefined
+const checkForUpdate = () => registration?.update()
 
 // The service worker serves the cached app first, so a deployment downloads in the
 // background and waits; this offers to switch to it.
 const { needRefresh, updateServiceWorker } = useRegisterSW({
   immediate: true,
-  onRegisteredSW(_url, registration) {
+  onRegisteredSW(_url, swRegistration) {
+    registration = swRegistration
+    if (!registration) return
+    // workbox-window stops listening after the first update it finds, so an app left open
+    // across two deployments would never offer the second. Watch every one here.
+    registration.addEventListener('updatefound', () => {
+      const worker = registration?.installing
+      worker?.addEventListener('statechange', () => {
+        if (worker.state === 'installed' && navigator.serviceWorker.controller) needRefresh.value = true
+      })
+    })
     // Browsers only look for updates on page loads; an app left open checks hourly too.
-    if (registration) setInterval(() => registration.update(), CHECK_EVERY)
+    setInterval(checkForUpdate, CHECK_EVERY)
   },
 })
+
+// Phones pause timers in the background, so also check whenever the app is brought back.
+useEventListener(document, 'visibilitychange', () => {
+  if (document.visibilityState === 'visible') checkForUpdate()
+})
+
+function reload() {
+  // workbox-window only reloads for the update it was told about; this covers later ones.
+  navigator.serviceWorker.addEventListener('controllerchange', () => window.location.reload())
+  updateServiceWorker()
+}
 </script>
 
 <template>
@@ -24,7 +49,7 @@ const { needRefresh, updateServiceWorker } = useRegisterSW({
     <button
       type="button"
       class="rounded-lg bg-white px-3 py-1.5 font-bold text-neutral-900 outline-none hover:bg-neutral-200 focus-visible:ring-4 focus-visible:ring-blue-400 dark:bg-neutral-800 dark:text-white dark:hover:bg-neutral-700"
-      @click="updateServiceWorker()"
+      @click="reload"
     >
       Reload
     </button>
