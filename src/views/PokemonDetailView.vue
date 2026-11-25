@@ -41,6 +41,7 @@ import {
   onKeyStroke,
   useEventListener,
   usePreferredReducedMotion,
+  useLocalStorage,
   useRafFn,
   useTitle,
 } from '@vueuse/core'
@@ -72,6 +73,20 @@ const movesGame = computed(
     [...pokemonStore.games].reverse().find((game) => form.value?.learnset[game.id]?.length),
 )
 const learnset = computed(() => (movesGame.value && form.value?.learnset[movesGame.value.id]) || [])
+
+// Sections of the page, one shown at a time. The choice is remembered so paging through
+// Pokémon (or coming back later) stays on, say, Moves.
+const selectedTab = useLocalStorage('pokedex/detail-tab', 'about')
+const tabs = computed(() =>
+  [
+    { id: 'about', label: 'About' },
+    { id: 'stats', label: 'Stats' },
+    { id: 'moves', label: 'Moves', hidden: !movesGame.value },
+    { id: 'evolution', label: 'Evolution', hidden: !info.value?.evolutionChain },
+  ].filter((t) => !t.hidden),
+)
+const tab = computed(() => (tabs.value.some((t) => t.id === selectedTab.value) ? selectedTab.value : 'about'))
+const panelId = (tab: string) => `detail-${tab}`
 const card = computed((): IPokemon | undefined =>
   info.value && form.value
     ? {
@@ -487,7 +502,7 @@ watch(id, (value) => value && load(value), { immediate: true })
       <div v-else class="grid items-start gap-8 md:grid-cols-[minmax(0,20rem)_1fr]">
         <PokemonCard :pokemon="card" :shiny="pokemonStore.shiny" gyro class="mx-auto w-full max-w-xs" />
 
-        <div class="space-y-6">
+        <div class="min-w-0 space-y-6">
           <header>
             <GameSelect class="mb-3" />
             <p class="font-bold text-neutral-500 dark:text-neutral-400">
@@ -540,66 +555,107 @@ watch(id, (value) => value && load(value), { immediate: true })
             </select>
           </label>
 
-          <dl class="font-pixel grid max-w-xs grid-cols-2 gap-2 text-xl">
-            <div>
-              <dt class="text-neutral-500 dark:text-neutral-400">Height</dt>
-              <dd>{{ form?.height }}</dd>
-            </div>
-            <div>
-              <dt class="text-neutral-500 dark:text-neutral-400">Weight</dt>
-              <dd>{{ form?.weight }}</dd>
-            </div>
-          </dl>
+          <div
+            role="group"
+            aria-label="Sections"
+            class="flex max-w-md rounded-lg bg-white p-1 text-sm font-bold shadow-sm dark:bg-neutral-800"
+          >
+            <button
+              v-for="t in tabs"
+              :key="t.id"
+              type="button"
+              :aria-pressed="t.id === tab"
+              :aria-controls="panelId(t.id)"
+              class="flex-1 rounded-md px-1 py-1.5 text-neutral-600 sm:px-2 outline-none hover:text-neutral-900 focus-visible:ring-4 focus-visible:ring-blue-400 aria-pressed:bg-neutral-800 aria-pressed:text-white dark:text-neutral-300 dark:hover:text-white dark:aria-pressed:bg-neutral-100 dark:aria-pressed:text-neutral-900"
+              @click="selectedTab = t.id"
+            >
+              {{ t.label }}
+            </button>
+          </div>
 
-          <section v-if="form && card?.artwork">
-            <h2 class="font-inter mb-2 text-2xl font-black">Size</h2>
-            <SizeComparison
-              :name="form.name"
-              :height="form.heightMeters"
-              :shape="info.shape"
-              :artwork="card.artwork"
-            />
-          </section>
+          <div v-if="tab === 'about'" :id="panelId('about')" class="space-y-6">
+            <p
+              class="font-pixel rounded-md border-2 border-dashed p-3 text-xl"
+              :style="`border-color: var(--color-poke-${info.color})`"
+            >
+              {{ info.description || 'No info yet' }}
+            </p>
 
-          <section v-if="shown?.abilities.length">
-            <h2 class="font-inter mb-2 text-2xl font-black">Abilities</h2>
-            <ul class="font-pixel flex flex-wrap gap-2 text-xl">
-              <li
-                v-for="ability in shown.abilities"
-                :key="ability.name"
-                class="rounded-lg bg-white px-3 py-1 shadow-sm dark:bg-neutral-800"
-              >
-                {{ ability.name }}
-                <span v-if="ability.hidden" class="text-neutral-500 dark:text-neutral-400">
-                  (hidden)
-                </span>
-              </li>
-            </ul>
-          </section>
-
-          <section v-if="shown?.stats.length">
-            <h2 class="font-inter mb-2 text-2xl font-black">Base stats</h2>
-            <dl class="font-pixel grid max-w-md grid-cols-[6rem_3rem_1fr] items-center gap-x-3 gap-y-1 text-xl">
-              <template v-for="stat in shown.stats" :key="stat.name">
-                <dt class="text-neutral-500 dark:text-neutral-400">{{ stat.name }}</dt>
-                <dd class="text-right">{{ stat.value }}</dd>
-                <dd class="h-3 overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-800">
-                  <div
-                    class="h-full rounded-full"
-                    :style="{
-                      width: `${(stat.value / MAX_BASE_STAT) * 100}%`,
-                      backgroundColor: `var(--color-poke-${info.color})`,
-                    }"
-                  ></div>
-                </dd>
-              </template>
-              <dt class="font-bold">Total</dt>
-              <dd class="text-right font-bold">{{ statsTotal }}</dd>
+            <dl class="font-pixel grid max-w-xs grid-cols-2 gap-2 text-xl">
+              <div>
+                <dt class="text-neutral-500 dark:text-neutral-400">Height</dt>
+                <dd>{{ form?.height }}</dd>
+              </div>
+              <div>
+                <dt class="text-neutral-500 dark:text-neutral-400">Weight</dt>
+                <dd>{{ form?.weight }}</dd>
+              </div>
             </dl>
-          </section>
 
-          <section v-if="form && movesGame">
-            <h2 class="font-inter text-2xl font-black">Moves</h2>
+            <section v-if="form && card?.artwork">
+              <h2 class="font-inter mb-2 text-2xl font-black">Size</h2>
+              <SizeComparison
+                :name="form.name"
+                :height="form.heightMeters"
+                :shape="info.shape"
+                :artwork="card.artwork"
+              />
+            </section>
+
+            <section v-if="shown?.abilities.length">
+              <h2 class="font-inter mb-2 text-2xl font-black">Abilities</h2>
+              <ul class="font-pixel flex flex-wrap gap-2 text-xl">
+                <li
+                  v-for="ability in shown.abilities"
+                  :key="ability.name"
+                  class="rounded-lg bg-white px-3 py-1 shadow-sm dark:bg-neutral-800"
+                >
+                  {{ ability.name }}
+                  <span v-if="ability.hidden" class="text-neutral-500 dark:text-neutral-400">
+                    (hidden)
+                  </span>
+                </li>
+              </ul>
+            </section>
+          </div>
+
+          <div v-else-if="tab === 'stats'" :id="panelId('stats')" class="space-y-6">
+            <section v-if="shown?.stats.length">
+              <h2 class="font-inter mb-2 text-2xl font-black">Base stats</h2>
+              <dl class="font-pixel grid max-w-md grid-cols-[6rem_3rem_1fr] items-center gap-x-3 gap-y-1 text-xl">
+                <template v-for="stat in shown.stats" :key="stat.name">
+                  <dt class="text-neutral-500 dark:text-neutral-400">{{ stat.name }}</dt>
+                  <dd class="text-right">{{ stat.value }}</dd>
+                  <dd class="h-3 overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-800">
+                    <div
+                      class="h-full rounded-full"
+                      :style="{
+                        width: `${(stat.value / MAX_BASE_STAT) * 100}%`,
+                        backgroundColor: `var(--color-poke-${info.color})`,
+                      }"
+                    ></div>
+                  </dd>
+                </template>
+                <dt class="font-bold">Total</dt>
+                <dd class="text-right font-bold">{{ statsTotal }}</dd>
+              </dl>
+            </section>
+
+            <section v-if="matchups.length">
+              <h2 class="font-inter text-2xl font-black">Type matchups</h2>
+              <p class="mb-2 text-sm text-neutral-500 dark:text-neutral-400">
+                Damage taken from each attacking type
+              </p>
+              <dl class="grid grid-cols-[3rem_1fr] items-center gap-x-3 gap-y-2">
+                <template v-for="group in matchups" :key="group.label">
+                  <dt class="font-pixel text-xl">{{ group.label }}</dt>
+                  <dd><TypeBadge :types="group.types" class="flex-wrap gap-1" /></dd>
+                </template>
+              </dl>
+            </section>
+          </div>
+
+          <section v-else-if="tab === 'moves' && form && movesGame" :id="panelId('moves')">
             <p class="mb-2 text-sm text-neutral-500 dark:text-neutral-400">
               In {{ movesGame.name }}<template v-if="!pokemonStore.game">, the latest game with
                 move data. Pick a game above to see another</template
@@ -611,28 +667,7 @@ watch(id, (value) => value && load(value), { immediate: true })
             </p>
           </section>
 
-          <section v-if="matchups.length">
-            <h2 class="font-inter text-2xl font-black">Type matchups</h2>
-            <p class="mb-2 text-sm text-neutral-500 dark:text-neutral-400">
-              Damage taken from each attacking type
-            </p>
-            <dl class="grid grid-cols-[3rem_1fr] items-center gap-x-3 gap-y-2">
-              <template v-for="group in matchups" :key="group.label">
-                <dt class="font-pixel text-xl">{{ group.label }}</dt>
-                <dd><TypeBadge :types="group.types" class="flex-wrap gap-1" /></dd>
-              </template>
-            </dl>
-          </section>
-
-          <p
-            class="font-pixel rounded-md border-2 border-dashed p-3 text-xl"
-            :style="`border-color: var(--color-poke-${info.color})`"
-          >
-            {{ info.description || 'No info yet' }}
-          </p>
-
-          <section v-if="info.evolutionChain">
-            <h2 class="font-inter mb-2 text-2xl font-black">Evolution</h2>
+          <section v-else-if="tab === 'evolution' && info.evolutionChain" :id="panelId('evolution')">
             <EvolutionChain :evolution="info.evolutionChain" />
           </section>
         </div>
