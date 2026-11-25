@@ -146,12 +146,26 @@ describe('buildGames', () => {
   test('lists playable games in release order, with their Pokédexes in entry order', () => {
     const learnsets = new Set(['red-blue', 'scarlet-violet', 'colosseum'])
     expect(buildGames(groups, names, dexes, learnsets)).toEqual([
-      { id: 'red-blue', name: 'Red / Blue', generation: 1, order: 3, dexes: [{ name: 'kanto', start: 1, species: [1, 2] }] },
+      {
+        id: 'red-blue',
+        name: 'Red / Blue',
+        generation: 1,
+        order: 3,
+        versions: [
+          { id: 'red', name: 'Red' },
+          { id: 'blue', name: 'Blue' },
+        ],
+        dexes: [{ name: 'kanto', start: 1, species: [1, 2] }],
+      },
       {
         id: 'scarlet-violet',
         name: 'Scarlet / Violet',
         generation: 9,
         order: 27,
+        versions: [
+          { id: 'scarlet', name: 'Scarlet' },
+          { id: 'violet', name: 'Violet' },
+        ],
         dexes: [{ name: 'paldea', start: 1, species: [906] }],
       },
     ])

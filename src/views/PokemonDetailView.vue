@@ -34,7 +34,7 @@ import { usePokemonStore } from '@/stores/pokemon'
 import type { IPokemon, IPokemonInfo, PokemonType } from '@/types/pokemon'
 import { artwork, defaultSprite } from '@/utils/sprite'
 import { padNumber, titleCase } from '@/utils/string'
-import { formInGeneration } from '@/utils/game'
+import { formInGeneration, pokedexEntries } from '@/utils/game'
 import { defensiveMatchups } from '@/utils/type-matchups'
 import { foldPage, gradientFrom, polygonPath } from '@/utils/page-fold'
 import {
@@ -73,6 +73,7 @@ const movesGame = computed(
     [...pokemonStore.games].reverse().find((game) => form.value?.learnset[game.id]?.length),
 )
 const learnset = computed(() => (movesGame.value && form.value?.learnset[movesGame.value.id]) || [])
+const dexEntries = computed(() => pokedexEntries(info.value?.entries ?? {}, pokemonStore.games, pokemonStore.game))
 
 // Sections of the page, one shown at a time. The choice is remembered so paging through
 // Pokémon (or coming back later) stays on, say, Moves.
@@ -574,12 +575,32 @@ watch(id, (value) => value && load(value), { immediate: true })
           </div>
 
           <div v-if="tab === 'about'" :id="panelId('about')" class="space-y-6">
-            <p
-              class="font-pixel rounded-md border-2 border-dashed p-3 text-xl"
-              :style="`border-color: var(--color-poke-${info.color})`"
-            >
-              {{ info.description || 'No info yet' }}
-            </p>
+            <section aria-label="Pokédex entry" class="space-y-2">
+              <p
+                v-if="pokemonStore.game && dexEntries.game !== pokemonStore.game"
+                class="text-sm text-neutral-500 dark:text-neutral-400"
+              >
+                No entry for {{ pokemonStore.game.name }}.
+              </p>
+              <figure
+                v-for="entry in dexEntries.entries"
+                :key="entry.text"
+                class="rounded-md border-2 border-dashed p-3"
+                :style="`border-color: var(--color-poke-${info.color})`"
+              >
+                <figcaption class="text-sm font-bold text-neutral-500 dark:text-neutral-400">
+                  {{ entry.versions.join(' / ') }}
+                </figcaption>
+                <p class="font-pixel text-xl">{{ entry.text }}</p>
+              </figure>
+              <p
+                v-if="!dexEntries.entries.length"
+                class="font-pixel rounded-md border-2 border-dashed p-3 text-xl"
+                :style="`border-color: var(--color-poke-${info.color})`"
+              >
+                No info yet
+              </p>
+            </section>
 
             <dl class="font-pixel grid max-w-xs grid-cols-2 gap-2 text-xl">
               <div>

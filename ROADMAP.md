@@ -25,9 +25,9 @@ Ideas for improving Poképedia, ranked by value against effort.
 - [x] **Game selector.** Pick one of 22 games (Red / Blue to Legends: Z-A) in the list filter bar. The lists show that game's regional Pokédex in its order and numbering, and previous/next follows it.
 - [x] **Era-accurate data.** With a game picked, types, base stats (Gen 1's Special), abilities (none before Gen 3, no hidden ones before Gen 5) and type matchups are as they were then. Bundled from PokeAPI's past values by `bun run update-data`.
 - [x] **Movesets.** The detail page lists level-up, TM/HM/TR, egg and tutor moves for the game, with each move's type, category, power, accuracy and PP in that game.
+- [x] **Per-game Pokédex entries.** The About tab shows the selected game's entry, one per version when they differ (Sun and Moon), or the newest game's when there's none.
 - [ ] **Where to find it.** Wild encounter locations per game. PokeAPI only has them up to Gen 7.
 - [ ] **Game in the URL.** The selected game is remembered per device. A `?game=` parameter would make shared links open in the same game.
-- [ ] **Per-game Pokédex entries.** The description is the first English entry; `flavor_text_entries` has one per game.
 
 ## Discoverability
 

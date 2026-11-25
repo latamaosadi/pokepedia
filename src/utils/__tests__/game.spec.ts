@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
-import type { IForm } from '@/types/pokemon'
-import { formInGeneration, movesInGame, type MoveData } from '../game'
+import type { IForm, IGame } from '@/types/pokemon'
+import { formInGeneration, movesInGame, pokedexEntries, type MoveData } from '../game'
 
 const stat = (name: string, value: number) => ({ name, value })
 const ability = (name: string, slot: number, hidden = false) => ({ name, slot, hidden })
@@ -65,7 +65,7 @@ describe('movesInGame', () => {
     },
     machines: { 'firered-leafgreen': { flamethrower: 'TM35' } },
   }
-  const game = (id: string, generation: number, order: number) => ({ id, name: id, generation, order, dexes: [] })
+  const game = (id: string, generation: number, order: number) => ({ id, name: id, generation, order, versions: [], dexes: [] })
   const learnset = [
     { move: 'flamethrower', method: 'machine', level: 0 },
     { move: 'bite', method: 'level-up', level: 12 },
@@ -86,5 +86,33 @@ describe('movesInGame', () => {
     expect(moves('gold-silver', 2, 5).bite).toMatchObject({ type: 'dark', category: 'special' })
     expect(moves('diamond-pearl', 4, 12).bite).toMatchObject({ type: 'dark', category: 'physical' })
     expect(moves('red-blue', 1, 3).growl.category).toBe('status')
+  })
+})
+
+describe('pokedexEntries', () => {
+  const game = (id: string, versions: string[]) =>
+    ({ id, name: id, versions: versions.map((v) => ({ id: v, name: titleOf(v) })) }) as IGame
+  const titleOf = (v: string) => v[0].toUpperCase() + v.slice(1)
+  const redBlue = game('red-blue', ['red', 'blue'])
+  const sunMoon = game('sun-moon', ['sun', 'moon'])
+  const scarletViolet = game('scarlet-violet', ['scarlet', 'violet'])
+  const games = [redBlue, sunMoon, scarletViolet]
+  const entries = { red: 'Rare and cute.', blue: 'Rare and cute.', sun: 'Popular as a pet.', moon: 'Dances at night.' }
+
+  test("lists the game's entries, merging versions that share a text", () => {
+    expect(pokedexEntries(entries, games, redBlue)).toEqual({
+      game: redBlue,
+      entries: [{ text: 'Rare and cute.', versions: ['Red', 'Blue'] }],
+    })
+    expect(pokedexEntries(entries, games, sunMoon).entries).toEqual([
+      { text: 'Popular as a pet.', versions: ['Sun'] },
+      { text: 'Dances at night.', versions: ['Moon'] },
+    ])
+  })
+
+  test('falls back to the newest game with entries', () => {
+    expect(pokedexEntries(entries, games, scarletViolet).game).toBe(sunMoon)
+    expect(pokedexEntries(entries, games).game).toBe(sunMoon)
+    expect(pokedexEntries({}, games)).toEqual({ game: undefined, entries: [] })
   })
 })

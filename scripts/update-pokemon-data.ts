@@ -92,6 +92,8 @@ export interface Game {
   name: string
   generation: number
   order: number
+  /** The versions sold as this game, e.g. Red and Blue; each has its own Pokédex entries. */
+  versions: { id: string; name: string }[]
   /** The game's Pokédexes (DLC areas get their own); species in entry order, numbered from `start`. */
   dexes: { name: string; start: number; species: number[] }[]
 }
@@ -194,22 +196,26 @@ export function buildGames(
   return groups
     .filter((group) => !SKIPPED_GAMES.includes(group.name) && withLearnsets.has(group.name))
     .sort((a, b) => a.order - b.order)
-    .map((group) => ({
-      id: group.name,
-      name: group.versions.map((v) => versionNames.get(v.name) ?? v.name).join(' / '),
-      generation: idFromUrl(group.generation.url),
-      order: group.order,
-      dexes: group.pokedexes.map(({ name }) => {
-        const entries = [...(dexByName.get(name)?.pokemon_entries ?? [])].sort(
-          (a, b) => a.entry_number - b.entry_number,
-        )
-        return {
-          name,
-          start: entries[0]?.entry_number ?? 1,
-          species: entries.map((entry) => idFromUrl(entry.pokemon_species.url)),
-        }
-      }),
-    }))
+    .map((group) => {
+      const versions = group.versions.map((v) => ({ id: v.name, name: versionNames.get(v.name) ?? v.name }))
+      return {
+        id: group.name,
+        name: versions.map((v) => v.name).join(' / '),
+        generation: idFromUrl(group.generation.url),
+        order: group.order,
+        versions,
+        dexes: group.pokedexes.map(({ name }) => {
+          const entries = [...(dexByName.get(name)?.pokemon_entries ?? [])].sort(
+            (a, b) => a.entry_number - b.entry_number,
+          )
+          return {
+            name,
+            start: entries[0]?.entry_number ?? 1,
+            species: entries.map((entry) => idFromUrl(entry.pokemon_species.url)),
+          }
+        }),
+      }
+    })
 }
 
 export function buildMoves(moves: MoveResponse[], gameOrder: Map<string, number>) {

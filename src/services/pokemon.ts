@@ -35,6 +35,10 @@ export function getIdFromUrl(url: string) {
 
 const isEnglish = (entry: { language: INamedResource }) => entry.language.name === 'en'
 
+// Entries keep the games' line breaks, soft hyphens ("be\u00ad\nhavior") and, up to Gen 3, "POKéMON".
+const cleanEntry = (text: string) =>
+  text.replace(/\u00ad\s*/g, '').replace(/\s+/g, ' ').replace(/POKéMON/g, 'Pokémon').trim()
+
 export function describeEvolution(detail: Raw): string {
   const parts = [
     detail.trigger.name === 'trade' && 'Trade',
@@ -144,9 +148,10 @@ export async function getPokemonInfo(id: string): Promise<IPokemonInfo> {
     color: species.color.name,
     shape: species.shape?.name ?? '',
     genus: species.genera.find(isEnglish)?.genus || '',
-    description: (species.flavor_text_entries.find(isEnglish)?.flavor_text || '').replace(
-      /\s+/g,
-      ' ',
+    entries: Object.fromEntries(
+      species.flavor_text_entries
+        .filter(isEnglish)
+        .map((entry: Raw) => [entry.version.name, cleanEntry(entry.flavor_text)]),
     ),
     forms,
     evolutionChain: chain ? buildEvolution(chain.chain) : null,

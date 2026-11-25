@@ -16,7 +16,9 @@ const responses: Record<string, unknown> = {
     color: ref('red'),
     shape: ref('upright'),
     flavor_text_entries: [
-      { language: en, flavor_text: 'Spits fire that\nis hot enough to\nmelt boulders.\fKnown to cause' },
+      { language: en, version: ref('red'), flavor_text: 'Spits fire that\nis hot enough to\nmelt boulders.\fKnown to cause' },
+      { language: ref('ja'), version: ref('red'), flavor_text: 'くちから しゃくねつの ほのおを' },
+      { language: en, version: ref('ruby'), flavor_text: 'This POKéMON is a pow\u00ad\nerful flier.' },
     ],
     evolution_chain: { url: `${API}/evolution-chain/2/` },
     varieties: [
@@ -107,7 +109,10 @@ describe('getPokemonInfo', () => {
       color: 'red',
       shape: 'upright',
       genus: 'Flame Pokémon',
-      description: 'Spits fire that is hot enough to melt boulders. Known to cause',
+      entries: {
+        red: 'Spits fire that is hot enough to melt boulders. Known to cause',
+        ruby: 'This Pokémon is a powerful flier.',
+      },
     })
     // Totem form is hidden.
     expect(info.forms.map(({ name, types, height, weight }) => ({ name, types, height, weight })))

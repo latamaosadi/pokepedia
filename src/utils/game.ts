@@ -56,6 +56,27 @@ export function formInGeneration(form: IForm, generation?: number) {
   }
 }
 
+/** A game's Pokédex entries, one per distinct text, with the versions that use it. */
+function entriesIn(entries: Record<string, string>, game: IGame) {
+  const versionsByText = new Map<string, string[]>()
+  for (const { id, name } of game.versions) {
+    const text = entries[id]
+    if (text) versionsByText.set(text, [...(versionsByText.get(text) ?? []), name])
+  }
+  return [...versionsByText].map(([text, versions]) => ({ text, versions }))
+}
+
+/**
+ * The Pokédex entries to show for a game. Without a game, or when it has none (PokeAPI has
+ * none yet for the newest games), those of the newest game that has some, and that game.
+ */
+export function pokedexEntries(entries: Record<string, string>, games: IGame[], game?: IGame) {
+  const own = game ? entriesIn(entries, game) : []
+  if (own.length) return { game, entries: own }
+  const latest = [...games].reverse().find((g) => entriesIn(entries, g).length)
+  return { game: latest, entries: latest ? entriesIn(entries, latest) : [] }
+}
+
 /** [type, category, power, accuracy, pp, past values], as written by `bun run update-data`. */
 type MoveStats = [string, string, number | null, number | null, number | null, PastMoveValues[]?]
 /** [order of the first game with the newer values, power, accuracy, pp, type]; null where unchanged. */

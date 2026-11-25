@@ -114,7 +114,8 @@ export interface IPokemonInfo {
   /** PokeAPI body shape, e.g. 'upright', 'squiggle' (serpentine), 'fish'. */
   shape: string
   genus: string
-  description: string
+  /** English Pokédex entry per version, e.g. { red: '…', blue: '…' }. */
+  entries: Record<string, string>
   forms: IForm[]
   evolutionChain: IEvolutionChain | null
 }
@@ -124,6 +125,8 @@ export interface IGame {
   name: string
   generation: number
   order: number
+  /** The versions sold as this game, e.g. Red and Blue; each has its own Pokédex entries. */
+  versions: { id: string; name: string }[]
   /** The game's Pokédexes (DLC areas get their own); species in entry order, numbered from `start`. */
   dexes: { name: string; start: number; species: number[] }[]
 }
