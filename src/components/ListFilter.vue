@@ -3,10 +3,20 @@ import { usePokemonStore } from '@/stores/pokemon'
 import { PokemonTypeEnum } from '@/types/pokemon'
 import { typeIcon } from '@/utils/sprite'
 import { titleCase } from '@/utils/string'
+import { computed } from 'vue'
 import ShinyToggle from './ShinyToggle.vue'
 
 const pokemonStore = usePokemonStore()
-const types = Object.values(PokemonTypeEnum).filter((t) => t !== 'unknown' && t !== 'shadow')
+// In the usual order, limited to the types that exist in the selected game.
+const types = computed(() =>
+  Object.values(PokemonTypeEnum).filter((t) => pokemonStore.availableTypes.includes(t)),
+)
+const generations = computed(() =>
+  [...new Set(pokemonStore.games.map((game) => game.generation))].map((generation) => ({
+    generation,
+    games: pokemonStore.games.filter((game) => game.generation === generation),
+  })),
+)
 const views = [
   { name: 'home', label: 'Grid' },
   { name: 'dex', label: 'Pokédex' },
@@ -29,6 +39,20 @@ const views = [
           {{ view.label }}
         </RouterLink>
       </nav>
+      <select
+        v-model="pokemonStore.gameId"
+        aria-label="Game"
+        class="select-chevron min-w-0 shrink rounded-lg bg-white py-2 pr-10 pl-3 font-bold text-neutral-800 shadow-sm outline-none focus-visible:ring-4 focus-visible:ring-blue-400 dark:bg-neutral-800 dark:text-neutral-100"
+      >
+        <option value="">National Dex</option>
+        <optgroup
+          v-for="{ generation, games } in generations"
+          :key="generation"
+          :label="`Generation ${generation}`"
+        >
+          <option v-for="game in games" :key="game.id" :value="game.id">{{ game.name }}</option>
+        </optgroup>
+      </select>
       <input
         v-model="pokemonStore.query"
         type="search"

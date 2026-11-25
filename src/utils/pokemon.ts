@@ -44,16 +44,26 @@ export function formatFormName(name: string, speciesName: string) {
 }
 
 /**
- * Search match on name or Pokédex number, optionally limited to one type. Plain digits
- * match as a prefix while typing ("25" → 25, 250–259); a padded number ("025", "#025")
- * is exact.
+ * Search match on name or Pokédex number (the regional one when a game is selected),
+ * optionally limited to one type. Plain digits match as a prefix while typing
+ * ("25" → 25, 250–259); a padded number ("025", "#025") is exact.
  */
 export function matchesFilter(pokemon: IPokemon, query: string, type: string) {
   if (type && !pokemon.types?.some((t) => t.name === type)) return false
   const q = query.trim().toLowerCase().replace(/^#/, '')
   if (!q) return true
   if (/^\d+$/.test(q)) {
-    return q.startsWith('0') ? pokemon.number === Number(q) : String(pokemon.number).startsWith(q)
+    const number = pokemon.dexNumber ?? pokemon.number
+    return q.startsWith('0') ? number === Number(q) : String(number).startsWith(q)
   }
   return pokemon.formattedName.toLowerCase().includes(q) || pokemon.name.includes(q)
+}
+
+/**
+ * A Pokémon's types in a generation. `pastTypes` lists [last generation, types] for the
+ * few whose types changed (Clefairy was Normal until Gen 5), oldest first.
+ */
+export function typesInGeneration<T>(types: T[], pastTypes?: [number, T[]][], generation?: number) {
+  if (generation === undefined) return types
+  return pastTypes?.find(([last]) => generation <= last)?.[1] ?? types
 }

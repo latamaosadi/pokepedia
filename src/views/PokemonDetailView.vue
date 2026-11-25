@@ -89,19 +89,21 @@ function playCry() {
   if (form.value?.cry) new Audio(form.value.cry).play().catch(() => {})
 }
 
-// National Dex neighbours. Names come from the cached list when there is one; PokeAPI
-// also accepts the number, which covers landing here directly on a first visit.
-const LAST_NUMBER = 1025
+// Neighbours in the selected game's Pokédex, or by National number when there's no game
+// selected or this Pokémon isn't in it.
 function neighbour(offset: number) {
   if (!info.value) return undefined
-  const number = info.value.number + offset
-  if (number < 1 || number > (pokemonStore.list.length || LAST_NUMBER)) return undefined
-  const pokemon = pokemonStore.list[number - 1]
+  const { number } = info.value
+  const index = pokemonStore.dex.findIndex((pokemon) => pokemon.number === number)
+  const pokemon =
+    index >= 0 ? pokemonStore.dex[index + offset] : pokemonStore.list[number + offset - 1]
+  if (!pokemon) return undefined
   return {
-    id: pokemon?.name ?? String(number),
-    name: pokemon?.formattedName,
-    number,
-    sprite: defaultSprite(number, pokemonStore.shiny),
+    id: pokemon.name,
+    name: pokemon.formattedName,
+    number: pokemon.number,
+    label: `#${padNumber(pokemon.dexNumber ?? pokemon.number)}`,
+    sprite: defaultSprite(pokemon.number, pokemonStore.shiny),
   }
 }
 const previous = computed(() => neighbour(-1))
@@ -410,7 +412,7 @@ watch(id, (value) => value && load(value), { immediate: true })
         <RouterLink
           v-if="previous"
           :to="{ name: 'dex.detail', params: { id: previous.id } }"
-          :aria-label="`Previous: ${previous.name ?? `#${previous.number}`}`"
+          :aria-label="`Previous: ${previous.name}`"
           class="inline-flex items-center gap-1 rounded-full bg-white py-1 pr-3 pl-2 text-sm font-bold shadow-sm outline-none hover:bg-neutral-50 focus-visible:ring-4 focus-visible:ring-blue-400 dark:bg-neutral-800 dark:hover:bg-neutral-700"
         >
           ‹
@@ -421,17 +423,17 @@ watch(id, (value) => value && load(value), { immediate: true })
             height="96"
             class="-my-2 size-9 [image-rendering:pixelated]"
           />
-          #{{ padNumber(previous.number) }}
+          {{ previous.label }}
           <span v-if="previous.name" class="hidden sm:inline">{{ previous.name }}</span>
         </RouterLink>
         <RouterLink
           v-if="next"
           :to="{ name: 'dex.detail', params: { id: next.id } }"
-          :aria-label="`Next: ${next.name ?? `#${next.number}`}`"
+          :aria-label="`Next: ${next.name}`"
           class="inline-flex items-center gap-1 rounded-full bg-white py-1 pr-2 pl-3 text-sm font-bold shadow-sm outline-none hover:bg-neutral-50 focus-visible:ring-4 focus-visible:ring-blue-400 dark:bg-neutral-800 dark:hover:bg-neutral-700"
         >
           <span v-if="next.name" class="hidden sm:inline">{{ next.name }}</span>
-          #{{ padNumber(next.number) }}
+          {{ next.label }}
           <img
             :src="next.sprite"
             alt=""
@@ -617,7 +619,7 @@ watch(id, (value) => value && load(value), { immediate: true })
           class="size-40 [image-rendering:pixelated]"
         />
         <p class="font-bold text-neutral-500 dark:text-neutral-400">
-          #{{ padNumber(turningTo.number) }}
+          {{ turningTo.label }}
         </p>
         <p class="font-inter text-4xl font-black text-neutral-800 dark:text-neutral-100">
           {{ turningTo.name }}

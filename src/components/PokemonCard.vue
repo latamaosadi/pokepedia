@@ -187,7 +187,7 @@ const cardVars = computed(() => {
             class="font-inter shrink-0 text-left font-black text-white drop-shadow-sm"
             :style="`font-size: ${width / 7.5}px;`"
           >
-            #{{ pokemon?.number }}
+            #{{ pokemon?.dexNumber ?? pokemon?.number }}
           </h2>
           <TypeBadge :types="pokemon?.types || []" class="mb-2 flex-wrap justify-end" />
         </div>

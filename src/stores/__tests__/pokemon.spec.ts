@@ -93,4 +93,51 @@ describe('pokemon store', () => {
     expect(localStorage.getItem('pokedex/pokemon')).toBeNull()
     expect(localStorage.getItem('pokedex/v2/pokemon')).toBeNull()
   })
+
+  describe('with a game selected', () => {
+    test("lists the game's regional Pokédex in its own order and numbering", async () => {
+      const store = usePokemonStore()
+
+      store.gameId = 'scarlet-violet'
+      await nextTick()
+
+      expect(store.filtered[0]).toMatchObject({ name: 'sprigatito', number: 906, dexNumber: 1 })
+      // Paldea's 400, then the Kitakami and Blueberry additions, each Pokémon once.
+      expect(store.filtered.length).toBeGreaterThan(400)
+      expect(new Set(store.filtered.map((p) => p.number)).size).toBe(store.filtered.length)
+      expect(localStorage.getItem('pokedex/game')).toBe('scarlet-violet')
+    })
+
+    test('searching by number uses the regional number', () => {
+      const store = usePokemonStore()
+
+      store.gameId = 'gold-silver'
+      store.query = '#001'
+
+      expect(store.filtered.map((p) => p.name)).toEqual(['chikorita'])
+    })
+
+    test('shows types as they were in that game, and only types that existed then', async () => {
+      const store = usePokemonStore()
+
+      store.type = 'fairy'
+      store.gameId = 'red-blue'
+      await nextTick()
+
+      expect(store.filtered.find((p) => p.name === 'clefairy')?.types).toEqual([{ name: 'normal' }])
+      expect(store.availableTypes).not.toContain('fairy')
+      expect(store.availableTypes).not.toContain('dark')
+      expect(store.type).toBe('')
+    })
+
+    test('National Dex again when the game is cleared', () => {
+      const store = usePokemonStore()
+
+      store.gameId = 'red-blue'
+      expect(store.filtered).toHaveLength(151)
+      store.gameId = ''
+      expect(store.filtered).toHaveLength(1025)
+      expect(store.filtered[34].types).toEqual([{ name: 'fairy' }])
+    })
+  })
 })

@@ -10,6 +10,9 @@ const charts = Object.entries(typeCharts as Record<string, Chart>)
 const typeChart = (generation = Infinity) =>
   charts.find((entry) => entry.generation <= generation)?.chart ?? charts[0].chart
 
+/** The types that existed in a generation (no Dark or Steel in Gen 1, no Fairy before Gen 6). */
+export const typesIn = (generation?: number) => Object.keys(typeChart(generation))
+
 const MULTIPLIERS = [4, 2, 0.5, 0.25, 0]
 
 /**

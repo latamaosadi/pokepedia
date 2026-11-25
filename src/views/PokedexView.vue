@@ -219,7 +219,7 @@ onBeforeUnmount(() => {
                 </h2>
                 <span
                   class="text-xs leading-none font-bold text-neutral-400 dark:text-neutral-500"
-                  >#{{ padNumber(pokemon.number) }}</span
+                  >#{{ padNumber(pokemon.dexNumber ?? pokemon.number) }}</span
                 >
               </div>
             </div>

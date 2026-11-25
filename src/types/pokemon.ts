@@ -37,6 +37,8 @@ export interface IPokemon {
   name: string
   formattedName: string
   number: number
+  /** Number in the selected game's regional Pokédex. */
+  dexNumber?: number
   sprite: string
   artwork?: string
   color?: string
@@ -84,4 +86,13 @@ export interface IPokemonInfo {
   description: string
   forms: IForm[]
   evolutionChain: IEvolutionChain | null
+}
+
+export interface IGame {
+  id: string
+  name: string
+  generation: number
+  order: number
+  /** The game's Pokédexes (DLC areas get their own); species in entry order, numbered from `start`. */
+  dexes: { name: string; start: number; species: number[] }[]
 }
