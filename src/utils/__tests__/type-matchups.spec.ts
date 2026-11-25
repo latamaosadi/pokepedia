@@ -1,8 +1,8 @@
 import { describe, expect, test } from 'vitest'
 import { defensiveMatchups } from '../type-matchups'
 
-const asMap = (types: string[]) =>
-  Object.fromEntries(defensiveMatchups(types).map((g) => [g.multiplier, [...g.types].sort()]))
+const asMap = (types: string[], generation?: number) =>
+  Object.fromEntries(defensiveMatchups(types, generation).map((g) => [g.multiplier, [...g.types].sort()]))
 
 describe('defensiveMatchups', () => {
   test('combines both types: Charizard (Fire/Flying)', () => {
@@ -26,5 +26,16 @@ describe('defensiveMatchups', () => {
       2: ['ground'],
       0.5: ['electric', 'flying', 'steel'],
     })
+  })
+
+  test('uses the chart of the given generation: Steel resisted Ghost and Dark before Gen 6', () => {
+    expect(asMap(['steel'], 5)[0.5]).toContain('ghost')
+    expect(asMap(['steel'], 6)[0.5]).not.toContain('ghost')
+  })
+
+  test('types that did not exist yet are left out: no Fairy, Dark or Steel in Gen 1', () => {
+    const types = asMap(['dragon'], 1)
+    expect(Object.values(types).flat()).not.toContain('fairy')
+    expect(asMap(['psychic'], 1)).toEqual({ 2: ['bug'], 0.5: ['fighting', 'psychic'], 0: ['ghost'] })
   })
 })

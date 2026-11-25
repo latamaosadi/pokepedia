@@ -1,5 +1,5 @@
-// Regenerates the Pokémon list and type chart shipped with the app, so a first
-// visit needs no API calls. Run when new Pokémon are released:
+// Regenerates the data shipped with the app (Pokémon list, type charts, games and moves),
+// so a first visit needs no API calls. Run when new Pokémon or games are released:
 //   bun run update-data
 import { writeFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
@@ -8,19 +8,26 @@ const API = 'https://pokeapi.co/api/v2'
 const OUT_DIR = new URL('../src/data/', import.meta.url)
 // Not real types: "unknown" and "shadow" have no Pokémon in the Dex, "stellar" is a Tera type.
 const SKIPPED_TYPES = ['unknown', 'shadow', 'stellar']
+// Japan-only releases and side or competitive games, which have no regional Pokédex to play through.
+const SKIPPED_GAMES = ['red-green-japan', 'blue-japan', 'colosseum', 'xd', 'champions']
 
 interface NamedResource {
   name: string
   url: string
 }
 
+type DamageRelations = Record<
+  'double_damage_to' | 'half_damage_to' | 'no_damage_to',
+  NamedResource[]
+>
+
 export interface TypeResponse {
   name: string
+  generation: NamedResource
   pokemon: { slot: number; pokemon: NamedResource }[]
-  damage_relations: Record<
-    'double_damage_to' | 'half_damage_to' | 'no_damage_to',
-    NamedResource[]
-  >
+  damage_relations: DamageRelations
+  /** Full relations as they were up to and including `generation`. */
+  past_damage_relations: { generation: NamedResource; damage_relations: DamageRelations }[]
 }
 
 export interface ColorResponse {
@@ -28,12 +35,71 @@ export interface ColorResponse {
   pokemon_species: NamedResource[]
 }
 
+export interface PokemonResponse {
+  id: number
+  moves: { version_group_details: { version_group: NamedResource }[] }[]
+  /** Types as they were up to and including `generation`. */
+  past_types: { generation: NamedResource; types: { slot: number; type: NamedResource }[] }[]
+}
+
+export interface VersionGroupResponse {
+  name: string
+  order: number
+  generation: NamedResource
+  pokedexes: NamedResource[]
+  versions: NamedResource[]
+}
+
+export interface PokedexResponse {
+  name: string
+  pokemon_entries: { entry_number: number; pokemon_species: NamedResource }[]
+}
+
+export interface MoveResponse {
+  name: string
+  type: NamedResource
+  damage_class: NamedResource
+  power: number | null
+  accuracy: number | null
+  pp: number | null
+  /** Values before `version_group`; null where unchanged. */
+  past_values: {
+    power: number | null
+    accuracy: number | null
+    pp: number | null
+    type: NamedResource | null
+    version_group: NamedResource
+  }[]
+}
+
+export interface MachineResponse {
+  item: NamedResource
+  move: NamedResource
+  version_group: NamedResource
+}
+
 export interface PokemonEntry {
   number: number
   name: string
   types: string[]
   color: string
+  /** [last generation, types] for Pokémon whose types changed, oldest first. */
+  pastTypes?: [number, string[]][]
 }
+
+export interface Game {
+  id: string
+  name: string
+  generation: number
+  order: number
+  /** The game's Pokédexes (DLC areas get their own); species in entry order, numbered from `start`. */
+  dexes: { name: string; start: number; species: number[] }[]
+}
+
+/** [type, damage class, power, accuracy, pp, past values] */
+export type Move = [string, string, number | null, number | null, number | null, PastMoveValues[]?]
+/** [order of the first game with today's values, power, accuracy, pp, type]; null where unchanged. */
+export type PastMoveValues = [number, number | null, number | null, number | null, string | null]
 
 const idFromUrl = (url: string) => Number(url.match(/\/(\d+)\/?$/)?.[1] ?? 0)
 
@@ -41,6 +107,7 @@ export function buildPokemonList(
   species: NamedResource[],
   types: TypeResponse[],
   colors: ColorResponse[],
+  pokemon: PokemonResponse[] = [],
 ): PokemonEntry[] {
   // Each type lists the default Pokémon (same id as the species) with its slot,
   // which gives the game's type order, e.g. Charizard is Fire first, then Flying.
@@ -55,56 +122,199 @@ export function buildPokemonList(
   for (const color of colors) {
     for (const entry of color.pokemon_species) colorById.set(idFromUrl(entry.url), color.name)
   }
+  const pastTypesById = new Map(
+    pokemon
+      .filter((p) => p.past_types.length)
+      .map((p) => [
+        p.id,
+        p.past_types
+          .map(({ generation, types }): [number, string[]] => [
+            idFromUrl(generation.url),
+            types.sort((a, b) => a.slot - b.slot).map((t) => t.type.name),
+          ])
+          .sort((a, b) => a[0] - b[0]),
+      ]),
+  )
 
   return species.map(({ name, url }) => {
     const number = idFromUrl(url)
+    const pastTypes = pastTypesById.get(number)
     return {
       number,
       name,
       types: (typesById.get(number) ?? []).sort((a, b) => a.slot - b.slot).map((t) => t.name),
       color: colorById.get(number) ?? '',
+      ...(pastTypes && { pastTypes }),
     }
   })
 }
 
 /** Attacking type → defending type → damage multiplier, listing only non-1× entries. */
-export function buildTypeChart(types: TypeResponse[]) {
+function typeChart(types: TypeResponse[], generation: number) {
+  const existing = types.filter((type) => idFromUrl(type.generation.url) <= generation)
+  const exists = new Set(existing.map((type) => type.name))
   const chart: Record<string, Record<string, number>> = {}
-  for (const { name, damage_relations: damage } of types) {
-    chart[name] = {}
-    for (const { name: target } of damage.double_damage_to) chart[name][target] = 2
-    for (const { name: target } of damage.half_damage_to) chart[name][target] = 0.5
-    for (const { name: target } of damage.no_damage_to) chart[name][target] = 0
+  for (const type of existing) {
+    // The oldest past entry still covering this generation, else today's relations.
+    const past = type.past_damage_relations
+      .filter((entry) => idFromUrl(entry.generation.url) >= generation)
+      .sort((a, b) => idFromUrl(a.generation.url) - idFromUrl(b.generation.url))[0]
+    const damage = past?.damage_relations ?? type.damage_relations
+    chart[type.name] = {}
+    const set = (targets: NamedResource[], multiplier: number) => {
+      for (const { name } of targets) if (exists.has(name)) chart[type.name][name] = multiplier
+    }
+    set(damage.double_damage_to, 2)
+    set(damage.half_damage_to, 0.5)
+    set(damage.no_damage_to, 0)
   }
   return chart
 }
 
+/** Type charts keyed by the first generation they apply to, e.g. { 1: …, 2: …, 6: … }. */
+export function buildTypeCharts(types: TypeResponse[], lastGeneration: number) {
+  const charts: Record<number, Record<string, Record<string, number>>> = {}
+  let previous = ''
+  for (let generation = 1; generation <= lastGeneration; generation++) {
+    const chart = typeChart(types, generation)
+    const json = JSON.stringify(chart)
+    if (json !== previous) charts[generation] = chart
+    previous = json
+  }
+  return charts
+}
+
+export function buildGames(
+  groups: VersionGroupResponse[],
+  versionNames: Map<string, string>,
+  pokedexes: PokedexResponse[],
+  withLearnsets: Set<string>,
+): Game[] {
+  const dexByName = new Map(pokedexes.map((dex) => [dex.name, dex]))
+  return groups
+    .filter((group) => !SKIPPED_GAMES.includes(group.name) && withLearnsets.has(group.name))
+    .sort((a, b) => a.order - b.order)
+    .map((group) => ({
+      id: group.name,
+      name: group.versions.map((v) => versionNames.get(v.name) ?? v.name).join(' / '),
+      generation: idFromUrl(group.generation.url),
+      order: group.order,
+      dexes: group.pokedexes.map(({ name }) => {
+        const entries = [...(dexByName.get(name)?.pokemon_entries ?? [])].sort(
+          (a, b) => a.entry_number - b.entry_number,
+        )
+        return {
+          name,
+          start: entries[0]?.entry_number ?? 1,
+          species: entries.map((entry) => idFromUrl(entry.pokemon_species.url)),
+        }
+      }),
+    }))
+}
+
+export function buildMoves(moves: MoveResponse[], gameOrder: Map<string, number>) {
+  return Object.fromEntries(
+    moves.map((move): [string, Move] => {
+      const past = move.past_values
+        .filter((value) => gameOrder.has(value.version_group.name))
+        .map((value): PastMoveValues => [
+          gameOrder.get(value.version_group.name)!,
+          value.power,
+          value.accuracy,
+          value.pp,
+          value.type?.name ?? null,
+        ])
+        .sort((a, b) => a[0] - b[0])
+      const values: Move = [move.type.name, move.damage_class.name, move.power, move.accuracy, move.pp]
+      if (past.length) values.push(past)
+      return [move.name, values]
+    }),
+  )
+}
+
+/** Game → move → machine label, e.g. { 'firered-leafgreen': { flamethrower: 'TM35' } }. */
+export function buildMachines(machines: MachineResponse[], games: Set<string>) {
+  const byGame: Record<string, Record<string, string>> = {}
+  for (const { item, move, version_group: group } of machines) {
+    if (!games.has(group.name)) continue
+    byGame[group.name] ??= {}
+    byGame[group.name][move.name] = item.name.toUpperCase()
+  }
+  return byGame
+}
+
 async function getJson<T>(url: string): Promise<T> {
-  const response = await fetch(url)
-  if (!response.ok) throw new Error(`${response.status} ${response.statusText}: ${url}`)
-  return (await response.json()) as T
+  for (let attempt = 1; ; attempt++) {
+    const response = await fetch(url)
+    if (response.ok) return (await response.json()) as T
+    if (attempt === 3) throw new Error(`${response.status} ${response.statusText}: ${url}`)
+  }
+}
+
+/** Fetches many URLs, a few at a time so PokeAPI isn't flooded. */
+async function getAll<T>(urls: string[], concurrency = 20): Promise<T[]> {
+  const results: T[] = new Array(urls.length)
+  let next = 0
+  const worker = async () => {
+    while (next < urls.length) {
+      const index = next++
+      results[index] = await getJson<T>(urls[index])
+    }
+  }
+  await Promise.all(Array.from({ length: concurrency }, worker))
+  return results
 }
 
 type Page = { results: NamedResource[] }
+const listUrls = async (resource: string) =>
+  (await getJson<Page>(`${API}/${resource}?limit=100000`)).results.map((r) => r.url)
 
 async function main() {
   const species = (await getJson<Page>(`${API}/pokemon-species?limit=100000`)).results
   const typeList = (await getJson<Page>(`${API}/type?limit=100`)).results
-  const types = await Promise.all(
-    typeList
-      .filter((t) => !SKIPPED_TYPES.includes(t.name))
-      .map((t) => getJson<TypeResponse>(t.url)),
+  const types = await getAll<TypeResponse>(
+    typeList.filter((t) => !SKIPPED_TYPES.includes(t.name)).map((t) => t.url),
   )
-  const colorList = (await getJson<Page>(`${API}/pokemon-color?limit=100`)).results
-  const colors = await Promise.all(colorList.map((c) => getJson<ColorResponse>(c.url)))
+  const colors = await getAll<ColorResponse>(await listUrls('pokemon-color'))
+  console.log('Fetching Pokémon…')
+  const pokemon = await getAll<PokemonResponse>(species.map((s) => `${API}/pokemon/${idFromUrl(s.url)}`))
 
-  const list = buildPokemonList(species, types, colors)
-  await writeFile(new URL('pokemon.json', OUT_DIR), JSON.stringify(list) + '\n')
-  await writeFile(
-    new URL('type-chart.json', OUT_DIR),
-    JSON.stringify(buildTypeChart(types), null, 2) + '\n',
+  console.log('Fetching games…')
+  const groups = await getAll<VersionGroupResponse>(await listUrls('version-group'))
+  const versions = await getAll<{ name: string; names: { name: string; language: NamedResource }[] }>(
+    groups.flatMap((g) => g.versions.map((v) => v.url)),
   )
-  console.log(`Wrote ${list.length} Pokémon and ${types.length} types to src/data/`)
+  const versionNames = new Map(
+    versions.map((v) => [v.name, v.names.find((n) => n.language.name === 'en')?.name ?? v.name]),
+  )
+  const pokedexes = await getAll<PokedexResponse>(
+    [...new Set(groups.flatMap((g) => g.pokedexes.map((p) => p.url)))],
+  )
+  const withLearnsets = new Set(
+    pokemon.flatMap((p) => p.moves.flatMap((m) => m.version_group_details.map((d) => d.version_group.name))),
+  )
+  const games = buildGames(groups, versionNames, pokedexes, withLearnsets)
+
+  console.log('Fetching moves and machines…')
+  const moves = await getAll<MoveResponse>(await listUrls('move'))
+  const machines = await getAll<MachineResponse>(await listUrls('machine'))
+  // Every version group's order, so past move values from skipped games still place correctly.
+  const gameOrder = new Map(groups.map((g) => [g.name, g.order]))
+
+  const list = buildPokemonList(species, types, colors, pokemon)
+  const lastGeneration = Math.max(...games.map((g) => g.generation))
+  const write = (file: string, data: unknown) =>
+    writeFile(new URL(file, OUT_DIR), JSON.stringify(data) + '\n')
+  await write('pokemon.json', list)
+  await write('type-chart.json', buildTypeCharts(types, lastGeneration))
+  await write('games.json', games)
+  await write('moves.json', {
+    moves: buildMoves(moves, gameOrder),
+    machines: buildMachines(machines, new Set(games.map((g) => g.id))),
+  })
+  console.log(
+    `Wrote ${list.length} Pokémon, ${types.length} types, ${games.length} games and ${moves.length} moves to src/data/`,
+  )
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) await main()
