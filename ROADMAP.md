@@ -20,6 +20,15 @@ Ideas for improving Poképedia, ranked by value against effort.
 - [x] **Pokédex fixes.** Snap scrolling, rows you can click to select, and lists that keep their size when a search returns only a few results.
 - [x] **Type picker with symbols.** The type filter is a grid of type symbols, with the selected type highlighted.
 
+## Game guide
+
+- [x] **Game selector.** Pick one of 22 games (Red / Blue to Legends: Z-A) in the list filter bar. The lists show that game's regional Pokédex in its order and numbering, and previous/next follows it.
+- [x] **Era-accurate data.** With a game picked, types, base stats (Gen 1's Special), abilities (none before Gen 3, no hidden ones before Gen 5) and type matchups are as they were then. Bundled from PokeAPI's past values by `bun run update-data`.
+- [x] **Movesets.** The detail page lists level-up, TM/HM/TR, egg and tutor moves for the game, with each move's type, category, power, accuracy and PP in that game.
+- [ ] **Where to find it.** Wild encounter locations per game. PokeAPI only has them up to Gen 7.
+- [ ] **Game in the URL.** The selected game is remembered per device. A `?game=` parameter would make shared links open in the same game.
+- [ ] **Per-game Pokédex entries.** The description is the first English entry; `flavor_text_entries` has one per game.
+
 ## Discoverability
 
 - [x] **A page per Pokémon.** The build writes `dex/<name>.html` with its own title, description and preview image, plus `sitemap.xml` and `robots.txt`. Each view sets its page title.
