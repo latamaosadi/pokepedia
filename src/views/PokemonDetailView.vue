@@ -25,6 +25,7 @@ function fetchInfo(id: string) {
 import EvolutionChain from '@/components/EvolutionChain.vue'
 import PokemonCard from '@/components/PokemonCard.vue'
 import ShinyToggle from '@/components/ShinyToggle.vue'
+import StatCalculator from '@/components/StatCalculator.vue'
 import MoveList from '@/components/MoveList.vue'
 import SizeComparison from '@/components/SizeComparison.vue'
 import GameSelect from '@/components/GameSelect.vue'
@@ -737,6 +738,14 @@ watch(id, (value) => value && load(value), { immediate: true })
                 <dt class="font-bold">Total</dt>
                 <dd class="text-right font-bold">{{ statsTotal }}</dd>
               </dl>
+            </section>
+
+            <section v-if="shown?.stats.length">
+              <h2 class="font-inter text-2xl font-black">Stat calculator</h2>
+              <p class="mb-2 text-sm text-neutral-500 dark:text-neutral-400">
+                Its stats at a level<template v-if="pokemonStore.game">, by {{ pokemonStore.game.name }}'s formula</template>
+              </p>
+              <StatCalculator :key="`${form?.id}-${generation}`" :stats="shown.stats" :generation />
             </section>
 
             <section v-if="training.length">

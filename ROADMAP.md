@@ -29,6 +29,7 @@ Ideas for improving Poképedia, ranked by value against effort.
 - [x] **Evolution by game.** The Evolution tab leaves out Pokémon from later generations and shows each evolution's method in the selected game (Leafeon at Eterna Forest in Diamond / Pearl, Leaf Stone from Sword / Shield), as cards in each Pokémon's colour. Location methods apply per generation, a stand-in for region.
 - [x] **Forms by game.** The Form picker lists only the forms in the selected game: Megas from X / Y, regional forms from their own game, Gigantamax in Sword / Shield.
 - [x] **Abilities, training and breeding.** Each ability's effect, EV yield, catch rate, base friendship, growth rate, egg groups, gender ratio, egg cycles and wild held items per version. Mechanics are hidden in games older than them (no EVs listed before Gen 3, no breeding in Gen 1).
+- [x] **Stat calculator.** The Stats tab works out a Pokémon's stats from level, nature, IVs and EVs, with Gen 1–2's DVs and stat experience when one of those games is picked.
 - [ ] **Where to find it.** Wild encounter locations per game. PokeAPI only has them up to Gen 7.
 - [ ] **Game in the URL.** The selected game is remembered per device. A `?game=` parameter would make shared links open in the same game.
 
