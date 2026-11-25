@@ -13,7 +13,7 @@ Ideas for improving Poképedia, ranked by value against effort.
 
 - [x] **Ship the Pokémon list with the app.** The list and type chart live in `src/data/` (regenerate with `bun run update-data`), so a first visit makes no API requests and works offline.
 - [x] **Type matchups.** The detail page shows damage taken from each type (4×, 2×, ½×, ¼×, 0×) for the selected form. Abilities like Levitate aren't factored in.
-- [x] **Favorites.** A ☆ button on detail pages and a Favorites filter in the lists, stored in `localStorage`. A team builder (6 Pokémon) is still open.
+- [x] **Favorites.** A ☆ button on detail pages and a Favorites filter in the lists, stored in `localStorage`.
 - [x] **Faster Pokédex card.** The big card now follows the list after 100ms instead of 500ms.
 - [x] **Size comparison.** The detail page draws the Pokémon next to a 1.6 m trainer, to scale. For serpents and fish (PokeAPI shapes `squiggle` and `fish`) the listed height is a length, so the body is drawn that long and labelled "m long". The serpent length is an estimate from the pose (width + height of the artwork).
 - [x] **Page-turn swipe.** On phones, swiping the detail page peels it like paper to the previous or next Pokémon, and letting go early cancels.
@@ -30,6 +30,7 @@ Ideas for improving Poképedia, ranked by value against effort.
 - [x] **Forms by game.** The Form picker lists only the forms in the selected game: Megas from X / Y, regional forms from their own game, Gigantamax in Sword / Shield.
 - [x] **Abilities, training and breeding.** Each ability's effect, EV yield, catch rate, base friendship, growth rate, egg groups, gender ratio, egg cycles and wild held items per version. Mechanics are hidden in games older than them (no EVs listed before Gen 3, no breeding in Gen 1).
 - [x] **Stat calculator.** The Stats tab works out a Pokémon's stats from level, nature, IVs and EVs, with Gen 1–2's DVs and stat experience when one of those games is picked.
+- [x] **Team builder.** A Team page holds up to six Pokémon (added there or with “+ Team” on their page, saved on the device) and shows, by the selected game's type chart, how many members each attacking type hits hard or is resisted by, and which types the team's own types can't hit super effectively.
 - [ ] **Where to find it.** Wild encounter locations per game. PokeAPI only has them up to Gen 7.
 - [ ] **Game in the URL.** The selected game is remembered per device. A `?game=` parameter would make shared links open in the same game.
 

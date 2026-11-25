@@ -31,3 +31,29 @@ export function defensiveMatchups(defendingTypes: string[], generation?: number)
     types: byMultiplier.get(multiplier)!,
   }))
 }
+
+/** How a team of Pokémon (each a list of types) fares against each attacking type. */
+export function teamDefense(team: string[][], generation?: number) {
+  const chart = typeChart(generation)
+  return Object.entries(chart).map(([attacker, against]) => {
+    const multipliers = team.map((types) => types.reduce((total, type) => total * (against[type] ?? 1), 1))
+    return {
+      type: attacker,
+      weak: multipliers.filter((m) => m > 1).length,
+      resist: multipliers.filter((m) => m < 1).length,
+    }
+  })
+}
+
+/**
+ * Each defending type with the team's types that hit it super effectively. Only the
+ * members' own types count (their STAB moves), not the rest of their movesets.
+ */
+export function teamCoverage(team: string[][], generation?: number) {
+  const chart = typeChart(generation)
+  const attackers = [...new Set(team.flat())]
+  return Object.keys(chart).map((defender) => ({
+    type: defender,
+    hitBy: attackers.filter((attacker) => (chart[attacker]?.[defender] ?? 1) > 1),
+  }))
+}

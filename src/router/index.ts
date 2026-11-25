@@ -6,7 +6,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 let homeScrollTop = 0
 
 // The list view a detail page was opened from, so its back link returns there.
-export const lastListView = ref<'home' | 'dex'>('home')
+export const lastListView = ref<'home' | 'dex' | 'team'>('home')
 
 // The virtual grid only gets its full height after measuring a card, so wait
 // until the page can actually scroll that far before restoring.
@@ -36,6 +36,11 @@ const router = createRouter({
       component: () => import('../views/PokedexView.vue'),
     },
     {
+      path: '/team',
+      name: 'team',
+      component: () => import('../views/TeamView.vue'),
+    },
+    {
       path: '/dex/:id',
       name: 'dex.detail',
       component: () => import('../views/PokemonDetailView.vue'),
@@ -50,7 +55,7 @@ const router = createRouter({
 
 router.beforeEach((_to, from) => {
   if (from.name === 'home') homeScrollTop = window.scrollY
-  if (from.name === 'home' || from.name === 'dex') lastListView.value = from.name
+  if (from.name === 'home' || from.name === 'dex' || from.name === 'team') lastListView.value = from.name
 })
 
 export default router

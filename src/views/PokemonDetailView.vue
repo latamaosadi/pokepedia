@@ -32,7 +32,7 @@ import GameSelect from '@/components/GameSelect.vue'
 import TypeBadge from '@/components/TypeBadge.vue'
 import abilityData from '@/data/abilities.json'
 import { lastListView } from '@/router'
-import { usePokemonStore } from '@/stores/pokemon'
+import { TEAM_SIZE, usePokemonStore } from '@/stores/pokemon'
 import type { IEvolutionChain, IPokemon, IPokemonInfo, PokemonType } from '@/types/pokemon'
 import { artwork, defaultSprite } from '@/utils/sprite'
 import { padNumber, titleCase } from '@/utils/string'
@@ -473,7 +473,7 @@ watch(id, (value) => value && load(value), { immediate: true })
         :to="{ name: lastListView }"
         class="shrink-0 rounded font-bold whitespace-nowrap outline-none hover:underline focus-visible:ring-4 focus-visible:ring-blue-400"
       >
-        {{ lastListView === 'dex' ? '← Pokédex' : '← All Pokémon' }}
+        {{ { dex: '← Pokédex', team: '← Team', home: '← All Pokémon' }[lastListView] }}
       </RouterLink>
       <div class="flex gap-2">
         <RouterLink
@@ -576,6 +576,20 @@ watch(id, (value) => value && load(value), { immediate: true })
                 @click="pokemonStore.toggleFavorite(info.number)"
               >
                 {{ pokemonStore.isFavorite(info.number) ? '★' : '☆' }} Favorite
+              </button>
+              <button
+                type="button"
+                :aria-pressed="pokemonStore.inTeam(info.number)"
+                :disabled="!pokemonStore.inTeam(info.number) && pokemonStore.team.length >= TEAM_SIZE"
+                :title="
+                  !pokemonStore.inTeam(info.number) && pokemonStore.team.length >= TEAM_SIZE
+                    ? 'Your team is full'
+                    : undefined
+                "
+                class="rounded-full bg-white px-3 py-1 text-sm font-bold shadow-sm outline-none hover:bg-neutral-50 focus-visible:ring-4 focus-visible:ring-blue-400 disabled:opacity-50 aria-pressed:bg-neutral-800 aria-pressed:text-white dark:bg-neutral-800 dark:hover:bg-neutral-700 dark:aria-pressed:bg-neutral-100 dark:aria-pressed:text-neutral-900"
+                @click="pokemonStore.toggleTeam(info.number)"
+              >
+                {{ pokemonStore.inTeam(info.number) ? '✓ In team' : '+ Team' }}
               </button>
               <ShinyToggle />
             </div>

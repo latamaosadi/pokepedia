@@ -35,6 +35,7 @@ const pastTypes = new Map<number, [number, IType[]][]>(
 )
 
 const games: IGame[] = gamesData
+export const TEAM_SIZE = 6
 
 /**
  * A game's regional Pokédex in its own order and numbering, with types as they were then.
@@ -79,6 +80,20 @@ export const usePokemonStore = defineStore('pokemon', () => {
     if (type.value && !available.includes(type.value)) type.value = ''
   })
 
+  // Up to six Pokémon (National Dex numbers) for the team builder, remembered across visits.
+  const team = useLocalStorage<number[]>('pokedex/team', [])
+  const inTeam = (number: number) => team.value.includes(number)
+  function toggleTeam(number: number) {
+    if (inTeam(number)) team.value = team.value.filter((n) => n !== number)
+    else if (team.value.length < TEAM_SIZE) team.value = [...team.value, number]
+  }
+  /** A Pokémon with its types in the selected game, whether or not it's in the game's Pokédex. */
+  const pokemonInGame = (number: number): IPokemon | undefined => {
+    const pokemon = list[number - 1]
+    if (!pokemon || !game.value) return pokemon
+    return { ...pokemon, types: typesInGeneration(pokemon.types ?? [], pastTypes.get(number), game.value.generation) }
+  }
+
   const isFavorite = (number: number) => favorites.value.includes(number)
   function toggleFavorite(number: number) {
     favorites.value = isFavorite(number)
@@ -122,5 +137,9 @@ export const usePokemonStore = defineStore('pokemon', () => {
     favoritesOnly,
     isFavorite,
     toggleFavorite,
+    team,
+    inTeam,
+    toggleTeam,
+    pokemonInGame,
   }
 })

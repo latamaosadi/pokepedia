@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { defensiveMatchups } from '../type-matchups'
+import { defensiveMatchups, teamCoverage, teamDefense } from '../type-matchups'
 
 const asMap = (types: string[], generation?: number) =>
   Object.fromEntries(defensiveMatchups(types, generation).map((g) => [g.multiplier, [...g.types].sort()]))
@@ -38,4 +38,29 @@ describe('defensiveMatchups', () => {
     expect(Object.values(types).flat()).not.toContain('fairy')
     expect(asMap(['psychic'], 1)).toEqual({ 2: ['bug'], 0.5: ['fighting', 'psychic'], 0: ['ghost'] })
   })
+})
+
+describe('teamDefense', () => {
+  const byType = (rows: ReturnType<typeof teamDefense>) => Object.fromEntries(rows.map((r) => [r.type, r]))
+
+  test('counts members weak to and resisting each attacking type', () => {
+    // Charizard (Fire/Flying), Blastoise (Water), Venusaur (Grass/Poison)
+    const team = byType(teamDefense([['fire', 'flying'], ['water'], ['grass', 'poison']]))
+    expect(team.rock).toEqual({ type: 'rock', weak: 1, resist: 0 })
+    expect(team.electric).toEqual({ type: 'electric', weak: 2, resist: 1 })
+    expect(team.ground).toEqual({ type: 'ground', weak: 0, resist: 1 })
+  })
+
+  test("uses the generation's chart", () => {
+    expect(teamDefense([['normal']], 1).map((r) => r.type)).not.toContain('fairy')
+  })
+})
+
+test('teamCoverage lists the team types hitting each type super effectively', () => {
+  const coverage = Object.fromEntries(
+    teamCoverage([['fire', 'flying'], ['water']]).map((row) => [row.type, row.hitBy]),
+  )
+  expect(coverage.grass).toEqual(['fire', 'flying'])
+  expect(coverage.rock).toEqual(['water'])
+  expect(coverage.dragon).toEqual([])
 })
