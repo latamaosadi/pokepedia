@@ -19,7 +19,7 @@ const pwaOptions: Partial<VitePWAOptions> = {
     theme_color: '#DE3C47',
     background_color: '#DE3C47',
   },
-  registerType: 'autoUpdate',
+  registerType: 'prompt',
   pwaAssets: { image: 'public/logo.svg' },
   workbox: {
     globPatterns: ['**/*.{html,js,css,png,svg,ico,woff,woff2}'],
