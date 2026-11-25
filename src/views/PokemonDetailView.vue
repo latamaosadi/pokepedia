@@ -27,6 +27,7 @@ import PokemonCard from '@/components/PokemonCard.vue'
 import ShinyToggle from '@/components/ShinyToggle.vue'
 import MoveList from '@/components/MoveList.vue'
 import SizeComparison from '@/components/SizeComparison.vue'
+import GameSelect from '@/components/GameSelect.vue'
 import TypeBadge from '@/components/TypeBadge.vue'
 import { lastListView } from '@/router'
 import { usePokemonStore } from '@/stores/pokemon'
@@ -488,6 +489,7 @@ watch(id, (value) => value && load(value), { immediate: true })
 
         <div class="space-y-6">
           <header>
+            <GameSelect class="mb-3" />
             <p class="font-bold text-neutral-500 dark:text-neutral-400">
               #{{ padNumber(info.number) }}
               <template v-if="pokemonStore.game">
@@ -600,7 +602,7 @@ watch(id, (value) => value && load(value), { immediate: true })
             <h2 class="font-inter text-2xl font-black">Moves</h2>
             <p class="mb-2 text-sm text-neutral-500 dark:text-neutral-400">
               In {{ movesGame.name }}<template v-if="!pokemonStore.game">, the latest game with
-                move data. Pick a game in the list to see another</template
+                move data. Pick a game above to see another</template
               >
             </p>
             <MoveList v-if="learnset.length" :key="`${form.id}-${movesGame.id}`" :learnset :game="movesGame" />
