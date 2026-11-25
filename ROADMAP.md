@@ -31,6 +31,7 @@ Ideas for improving Poképedia, ranked by value against effort.
 - [x] **Abilities, training and breeding.** Each ability's effect, EV yield, catch rate, base friendship, growth rate, egg groups, gender ratio, egg cycles and wild held items per version. Mechanics are hidden in games older than them (no EVs listed before Gen 3, no breeding in Gen 1).
 - [x] **Stat calculator.** The Stats tab works out a Pokémon's stats from level, nature, IVs and EVs, with Gen 1–2's DVs and stat experience when one of those games is picked.
 - [x] **Team builder.** A Team page holds up to six Pokémon (added there or with “+ Team” on their page, saved on the device) and shows, by the selected game's type chart, how many members each attacking type hits hard or is resisted by, and which types the team's own types can't hit super effectively.
+- [x] **Move details.** Tapping a move in the Moves tab shows the game's description of it, its priority and every Pokémon that learns it in that game. Learners per game are written to `public/learners/` by `bun run update-data` and fetched when needed.
 - [ ] **Where to find it.** Wild encounter locations per game. PokeAPI only has them up to Gen 7.
 - [ ] **Game in the URL.** The selected game is remembered per device. A `?game=` parameter would make shared links open in the same game.
 

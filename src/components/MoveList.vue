@@ -3,6 +3,7 @@ import type { IGame, ILearnedMove, IMoveRow } from '@/types/pokemon'
 import { movesInGame, type MoveData } from '@/utils/game'
 import { titleCase } from '@/utils/string'
 import { computed, ref, shallowRef } from 'vue'
+import MoveDetails from './MoveDetails.vue'
 import TypeBadge from './TypeBadge.vue'
 
 const { learnset, game } = defineProps<{
@@ -44,6 +45,8 @@ const tabs = computed(() =>
     .filter((tab) => tab.count),
 )
 const selected = ref('level-up')
+// The move whose details are shown.
+const open = ref<string>()
 const tab = computed(() => tabs.value.find((t) => t.id === selected.value) ?? tabs.value[0])
 
 const shown = computed(() => {
@@ -100,21 +103,31 @@ const CATEGORIES: Record<string, { label: string; class: string }> = {
         </tr>
       </thead>
       <tbody class="font-pixel text-base leading-tight sm:text-lg">
-        <tr
-          v-for="row in shown"
-          :key="`${row.move}-${row.level}`"
-          class="border-t border-neutral-200 dark:border-neutral-700"
-        >
-          <td v-if="firstColumn" class="py-1 pr-1.5 sm:pr-2 whitespace-nowrap">{{ firstCell(row) }}</td>
-          <th scope="row" class="py-1 pr-1.5 sm:pr-2 font-normal">{{ titleCase(row.move) }}</th>
-          <td class="py-1 pr-1.5 sm:pr-2"><TypeBadge :types="[{ name: row.type }]" /></td>
-          <td class="py-1 pr-1.5 sm:pr-2" :class="CATEGORIES[row.category]?.class">
-            {{ CATEGORIES[row.category]?.label ?? row.category }}
-          </td>
-          <td class="py-1 pr-1.5 sm:pr-2 text-right">{{ row.power ?? '—' }}</td>
-          <td class="hidden py-1 pr-1.5 sm:pr-2 text-right sm:table-cell">{{ row.accuracy ?? '—' }}</td>
-          <td class="py-1 text-right">{{ row.pp ?? '—' }}</td>
-        </tr>
+        <template v-for="row in shown" :key="`${row.move}-${row.level}`">
+          <tr class="border-t border-neutral-200 dark:border-neutral-700">
+            <td v-if="firstColumn" class="py-1 pr-1.5 sm:pr-2 whitespace-nowrap">{{ firstCell(row) }}</td>
+            <th scope="row" class="py-1 pr-1.5 sm:pr-2 font-normal">
+              <button
+                type="button"
+                :aria-expanded="open === row.move"
+                class="rounded text-left underline decoration-dotted underline-offset-4 outline-none hover:decoration-solid focus-visible:ring-4 focus-visible:ring-blue-400"
+                @click="open = open === row.move ? undefined : row.move"
+              >
+                {{ titleCase(row.move) }}
+              </button>
+            </th>
+            <td class="py-1 pr-1.5 sm:pr-2"><TypeBadge :types="[{ name: row.type }]" /></td>
+            <td class="py-1 pr-1.5 sm:pr-2" :class="CATEGORIES[row.category]?.class">
+              {{ CATEGORIES[row.category]?.label ?? row.category }}
+            </td>
+            <td class="py-1 pr-1.5 sm:pr-2 text-right">{{ row.power ?? '—' }}</td>
+            <td class="hidden py-1 pr-1.5 sm:pr-2 text-right sm:table-cell">{{ row.accuracy ?? '—' }}</td>
+            <td class="py-1 text-right">{{ row.pp ?? '—' }}</td>
+          </tr>
+          <tr v-if="open === row.move">
+            <td colspan="7"><MoveDetails :move="row.move" :game /></td>
+          </tr>
+        </template>
       </tbody>
     </table>
   </div>

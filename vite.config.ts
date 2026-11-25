@@ -31,6 +31,12 @@ const pwaOptions: Partial<VitePWAOptions> = {
         handler: 'CacheFirst',
       },
       {
+        // Move learners per game (public/learners), fetched when a move is opened.
+        urlPattern: ({ sameOrigin, url }) => sameOrigin && url.pathname.startsWith('/learners/'),
+        handler: 'StaleWhileRevalidate',
+        options: { cacheName: 'learners' },
+      },
+      {
         urlPattern: /^https:\/\/pokeapi\.co\/api\/.*/i,
         handler: 'StaleWhileRevalidate',
         options: { cacheName: 'pokeapi', expiration: { maxEntries: 1000 } },
