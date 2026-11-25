@@ -1,9 +1,16 @@
 import { describe, expect, test } from 'vitest'
 import type { IEvolutionChain, IForm, IGame } from '@/types/pokemon'
-import { evolutionIn, formInGeneration, movesInGame, pokedexEntries, type MoveData } from '../game'
+import {
+  byVersion,
+  evolutionIn,
+  formInGeneration,
+  formsIn,
+  movesInGame,
+  type MoveData,
+} from '../game'
 
 const stat = (name: string, value: number) => ({ name, value })
-const ability = (name: string, slot: number, hidden = false) => ({ name, slot, hidden })
+const ability = (name: string, slot: number, hidden = false) => ({ id: name, name, slot, hidden })
 
 // Clefable as PokeAPI describes it: Fairy since Gen 6, Gen 1's single Special stat,
 // Sp. Atk raised in Gen 6, and Magic Guard and Unaware arriving in Gens 4 and 5.
@@ -89,7 +96,7 @@ describe('movesInGame', () => {
   })
 })
 
-describe('pokedexEntries', () => {
+describe('byVersion', () => {
   const game = (id: string, versions: string[]) =>
     ({ id, name: id, versions: versions.map((v) => ({ id: v, name: titleOf(v) })) }) as IGame
   const titleOf = (v: string) => v[0].toUpperCase() + v.slice(1)
@@ -99,21 +106,21 @@ describe('pokedexEntries', () => {
   const games = [redBlue, sunMoon, scarletViolet]
   const entries = { red: 'Rare and cute.', blue: 'Rare and cute.', sun: 'Popular as a pet.', moon: 'Dances at night.' }
 
-  test("lists the game's entries, merging versions that share a text", () => {
-    expect(pokedexEntries(entries, games, redBlue)).toEqual({
+  test("lists the game's entries, merging versions that share one", () => {
+    expect(byVersion(entries, games, redBlue)).toEqual({
       game: redBlue,
-      entries: [{ text: 'Rare and cute.', versions: ['Red', 'Blue'] }],
+      entries: [{ value: 'Rare and cute.', versions: ['Red', 'Blue'] }],
     })
-    expect(pokedexEntries(entries, games, sunMoon).entries).toEqual([
-      { text: 'Popular as a pet.', versions: ['Sun'] },
-      { text: 'Dances at night.', versions: ['Moon'] },
+    expect(byVersion(entries, games, sunMoon).entries).toEqual([
+      { value: 'Popular as a pet.', versions: ['Sun'] },
+      { value: 'Dances at night.', versions: ['Moon'] },
     ])
   })
 
   test('falls back to the newest game with entries', () => {
-    expect(pokedexEntries(entries, games, scarletViolet).game).toBe(sunMoon)
-    expect(pokedexEntries(entries, games).game).toBe(sunMoon)
-    expect(pokedexEntries({}, games)).toEqual({ game: undefined, entries: [] })
+    expect(byVersion(entries, games, scarletViolet).game).toBe(sunMoon)
+    expect(byVersion(entries, games).game).toBe(sunMoon)
+    expect(byVersion({}, games)).toEqual({ game: undefined, entries: [] })
   })
 })
 
@@ -187,5 +194,31 @@ describe('evolutionIn', () => {
     const [line] = evolutionIn(eevee, games)
     expect(names([line])).toEqual([['eevee', ['vaporeon', 'espeon', 'leafeon', 'sylveon']]])
     expect(textsOf(line, 'leafeon')).toEqual(['Leaf Stone'])
+  })
+})
+
+describe('formsIn', () => {
+  const form = (name: string, games: string[]) =>
+    ({ name, learnset: Object.fromEntries(games.map((g) => [g, [{ move: 'tackle' }]])) }) as unknown as IForm
+  const game = (id: string) => ({ id }) as IGame
+  const charizard = [
+    form('Charizard', ['red-blue', 'x-y', 'sword-shield']),
+    form('Mega Charizard X', ['x-y']),
+    form('Gigantamax Charizard', []),
+  ]
+  const names = (forms: IForm[]) => forms.map((f) => f.name)
+
+  test('every form without a game', () => {
+    expect(formsIn(charizard)).toBe(charizard)
+  })
+
+  test('only forms with moves in the game; Gigantamax only in Sword / Shield', () => {
+    expect(names(formsIn(charizard, game('red-blue')))).toEqual(['Charizard'])
+    expect(names(formsIn(charizard, game('x-y')))).toEqual(['Charizard', 'Mega Charizard X'])
+    expect(names(formsIn(charizard, game('sword-shield')))).toEqual(['Charizard', 'Gigantamax Charizard'])
+  })
+
+  test('keeps the default form of a Pokémon not in the game', () => {
+    expect(names(formsIn(charizard, game('scarlet-violet')))).toEqual(['Charizard'])
   })
 })

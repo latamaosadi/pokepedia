@@ -29,12 +29,13 @@ import MoveList from '@/components/MoveList.vue'
 import SizeComparison from '@/components/SizeComparison.vue'
 import GameSelect from '@/components/GameSelect.vue'
 import TypeBadge from '@/components/TypeBadge.vue'
+import abilityData from '@/data/abilities.json'
 import { lastListView } from '@/router'
 import { usePokemonStore } from '@/stores/pokemon'
 import type { IEvolutionChain, IPokemon, IPokemonInfo, PokemonType } from '@/types/pokemon'
 import { artwork, defaultSprite } from '@/utils/sprite'
 import { padNumber, titleCase } from '@/utils/string'
-import { evolutionIn, formInGeneration, pokedexEntries } from '@/utils/game'
+import { byVersion, evolutionIn, formInGeneration, formsIn, versionsIn } from '@/utils/game'
 import { defensiveMatchups } from '@/utils/type-matchups'
 import { foldPage, gradientFrom, polygonPath } from '@/utils/page-fold'
 import {
@@ -58,9 +59,9 @@ const formId = ref<number>()
 const main = ref<HTMLElement>()
 const swipeEl = ref<HTMLElement>()
 
-const form = computed(
-  () => info.value?.forms.find((f) => f.id === formId.value) ?? info.value?.forms[0],
-)
+// Forms that exist in the selected game; picking another game can hide the chosen one.
+const forms = computed(() => formsIn(info.value?.forms ?? [], pokemonStore.game))
+const form = computed(() => forms.value.find((f) => f.id === formId.value) ?? forms.value[0])
 // The selected game's generation, and the form's types, stats and abilities as they were then.
 const generation = computed(() => pokemonStore.game?.generation)
 const shown = computed(() => form.value && formInGeneration(form.value, generation.value))
@@ -73,7 +74,13 @@ const movesGame = computed(
     [...pokemonStore.games].reverse().find((game) => form.value?.learnset[game.id]?.length),
 )
 const learnset = computed(() => (movesGame.value && form.value?.learnset[movesGame.value.id]) || [])
-const dexEntries = computed(() => pokedexEntries(info.value?.entries ?? {}, pokemonStore.games, pokemonStore.game))
+const dexEntries = computed(() => byVersion(info.value?.entries ?? {}, pokemonStore.games, pokemonStore.game))
+// A game without items means none are held there, so only the National Dex falls back.
+const heldItems = computed(() =>
+  pokemonStore.game
+    ? versionsIn(form.value?.heldItems ?? {}, pokemonStore.game)
+    : byVersion(form.value?.heldItems ?? {}, pokemonStore.games).entries,
+)
 const evolutionLines = computed(() =>
   info.value?.evolutionChain
     ? evolutionIn(info.value.evolutionChain, pokemonStore.games, pokemonStore.game)
@@ -110,11 +117,31 @@ const card = computed((): IPokemon | undefined =>
     : undefined,
 )
 
+// What each ability does (today's effect), shipped by `bun run update-data`.
+const abilityEffects: Record<string, string> = abilityData
 // PokeAPI cries are Ogg files, which not every browser can play.
 const canPlayCry =
   typeof Audio !== 'undefined' && new Audio().canPlayType('audio/ogg; codecs=vorbis') !== ''
 // Highest base stat in the games, so bars share one scale across Pokémon.
 const MAX_BASE_STAT = 255
+// Generation a mechanic arrived in, so older games don't list it.
+const since = (first: number) => !generation.value || generation.value >= first
+const training = computed(() =>
+  [
+    {
+      label: 'EV yield',
+      value: form.value?.evYield.map((stat) => `${stat.value} ${stat.name}`).join(', '),
+      hidden: !since(3),
+    },
+    { label: 'Catch rate', value: info.value?.captureRate },
+    { label: 'Base friendship', value: info.value?.baseFriendship, hidden: !since(2) },
+    { label: 'Growth rate', value: info.value?.growthRate },
+  ].filter((row) => !row.hidden && row.value != null && row.value !== ''),
+)
+const genderRatio = (femaleEighths: number) =>
+  femaleEighths < 0
+    ? 'Genderless'
+    : `♂ ${((8 - femaleEighths) / 8) * 100}% · ♀ ${(femaleEighths / 8) * 100}%`
 const statsTotal = computed(() => shown.value?.stats.reduce((sum, stat) => sum + stat.value, 0) ?? 0)
 
 const matchups = computed(() =>
@@ -554,13 +581,14 @@ watch(id, (value) => value && load(value), { immediate: true })
             <p class="font-pixel text-xl">{{ info.genus }}</p>
           </header>
 
-          <label v-if="info.forms.length > 1" class="block">
+          <label v-if="forms.length > 1" class="block">
             <span class="mb-1 block font-bold">Form</span>
             <select
-              v-model="formId"
+              :value="form?.id"
+              @change="formId = Number(($event.target as HTMLSelectElement).value)"
               class="select-chevron w-full max-w-xs rounded-lg bg-white py-2 pr-10 pl-3 dark:bg-neutral-800"
             >
-              <option v-for="f in info.forms" :key="f.id" :value="f.id">{{ f.name }}</option>
+              <option v-for="f in forms" :key="f.id" :value="f.id">{{ f.name }}</option>
             </select>
           </label>
 
@@ -592,14 +620,14 @@ watch(id, (value) => value && load(value), { immediate: true })
               </p>
               <figure
                 v-for="entry in dexEntries.entries"
-                :key="entry.text"
+                :key="entry.value"
                 class="rounded-md border-2 border-dashed p-3"
                 :style="`border-color: var(--color-poke-${info.color})`"
               >
                 <figcaption class="text-sm font-bold text-neutral-500 dark:text-neutral-400">
                   {{ entry.versions.join(' / ') }}
                 </figcaption>
-                <p class="font-pixel text-xl">{{ entry.text }}</p>
+                <p class="font-pixel text-xl">{{ entry.value }}</p>
               </figure>
               <p
                 v-if="!dexEntries.entries.length"
@@ -633,18 +661,59 @@ watch(id, (value) => value && load(value), { immediate: true })
 
             <section v-if="shown?.abilities.length">
               <h2 class="font-inter mb-2 text-2xl font-black">Abilities</h2>
-              <ul class="font-pixel flex flex-wrap gap-2 text-xl">
-                <li
+              <dl class="max-w-md space-y-2">
+                <div
                   v-for="ability in shown.abilities"
                   :key="ability.name"
-                  class="rounded-lg bg-white px-3 py-1 shadow-sm dark:bg-neutral-800"
+                  class="rounded-lg bg-white px-3 py-2 shadow-sm dark:bg-neutral-800"
                 >
-                  {{ ability.name }}
-                  <span v-if="ability.hidden" class="text-neutral-500 dark:text-neutral-400">
-                    (hidden)
-                  </span>
-                </li>
-              </ul>
+                  <dt class="font-pixel text-xl">
+                    {{ ability.name }}
+                    <span v-if="ability.hidden" class="text-neutral-500 dark:text-neutral-400">
+                      (hidden)
+                    </span>
+                  </dt>
+                  <dd class="text-sm">{{ abilityEffects[ability.id] }}</dd>
+                </div>
+              </dl>
+            </section>
+
+            <section v-if="since(2)">
+              <h2 class="font-inter mb-2 text-2xl font-black">Breeding</h2>
+              <dl class="font-pixel grid max-w-md grid-cols-2 gap-2 text-xl">
+                <div>
+                  <dt class="text-neutral-500 dark:text-neutral-400">Egg groups</dt>
+                  <dd>{{ info.eggGroups.join(', ') }}</dd>
+                </div>
+                <div>
+                  <dt class="text-neutral-500 dark:text-neutral-400">Egg cycles</dt>
+                  <dd>{{ info.eggCycles }}</dd>
+                </div>
+                <div class="col-span-2">
+                  <dt class="text-neutral-500 dark:text-neutral-400">Gender</dt>
+                  <dd>{{ genderRatio(info.genderRate) }}</dd>
+                </div>
+              </dl>
+            </section>
+
+            <section v-if="heldItems.length">
+              <h2 class="font-inter mb-2 text-2xl font-black">Held in the wild</h2>
+              <div v-for="entry in heldItems" :key="entry.versions.join()" class="mb-2">
+                <p class="text-sm font-bold text-neutral-500 dark:text-neutral-400">
+                  {{ entry.versions.join(' / ') }}
+                </p>
+                <ul class="font-pixel flex flex-wrap gap-2 text-xl">
+                  <li
+                    v-for="item in entry.value"
+                    :key="item.name"
+                    class="flex items-center gap-1 rounded-lg bg-white py-1 pr-3 pl-1 shadow-sm dark:bg-neutral-800"
+                  >
+                    <img :src="item.sprite" alt="" width="30" height="30" class="size-7" />
+                    {{ item.name }}
+                    <span class="text-neutral-500 dark:text-neutral-400">{{ item.rarity }}%</span>
+                  </li>
+                </ul>
+              </div>
             </section>
           </div>
 
@@ -667,6 +736,16 @@ watch(id, (value) => value && load(value), { immediate: true })
                 </template>
                 <dt class="font-bold">Total</dt>
                 <dd class="text-right font-bold">{{ statsTotal }}</dd>
+              </dl>
+            </section>
+
+            <section v-if="training.length">
+              <h2 class="font-inter mb-2 text-2xl font-black">Training</h2>
+              <dl class="font-pixel grid max-w-md grid-cols-2 gap-2 text-xl">
+                <div v-for="row in training" :key="row.label">
+                  <dt class="text-neutral-500 dark:text-neutral-400">{{ row.label }}</dt>
+                  <dd>{{ row.value }}</dd>
+                </div>
               </dl>
             </section>
 

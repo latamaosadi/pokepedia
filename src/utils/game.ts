@@ -58,25 +58,26 @@ export function formInGeneration(form: IForm, generation?: number) {
   }
 }
 
-/** A game's Pokédex entries, one per distinct text, with the versions that use it. */
-function entriesIn(entries: Record<string, string>, game: IGame) {
-  const versionsByText = new Map<string, string[]>()
+/** A game's per-version values (Pokédex entries, held items), one per distinct value, with the versions sharing it. */
+export function versionsIn<T>(values: Record<string, T>, game: IGame) {
+  const byValue = new Map<string, { value: T; versions: string[] }>()
   for (const { id, name } of game.versions) {
-    const text = entries[id]
-    if (text) versionsByText.set(text, [...(versionsByText.get(text) ?? []), name])
+    if (values[id] === undefined) continue
+    const key = JSON.stringify(values[id])
+    byValue.set(key, { value: values[id], versions: [...(byValue.get(key)?.versions ?? []), name] })
   }
-  return [...versionsByText].map(([text, versions]) => ({ text, versions }))
+  return [...byValue.values()]
 }
 
 /**
- * The Pokédex entries to show for a game. Without a game, or when it has none (PokeAPI has
- * none yet for the newest games), those of the newest game that has some, and that game.
+ * `versionsIn` for a game. Without a game, or when it has none (PokeAPI has no Pokédex
+ * entries yet for the newest games), those of the newest game that has some, and that game.
  */
-export function pokedexEntries(entries: Record<string, string>, games: IGame[], game?: IGame) {
-  const own = game ? entriesIn(entries, game) : []
+export function byVersion<T>(values: Record<string, T>, games: IGame[], game?: IGame) {
+  const own = game ? versionsIn(values, game) : []
   if (own.length) return { game, entries: own }
-  const latest = [...games].reverse().find((g) => entriesIn(entries, g).length)
-  return { game: latest, entries: latest ? entriesIn(entries, latest) : [] }
+  const latest = [...games].reverse().find((g) => versionsIn(values, g).length)
+  return { game: latest, entries: latest ? versionsIn(values, latest) : [] }
 }
 
 /** [type, category, power, accuracy, pp, past values], as written by `bun run update-data`. */
@@ -163,4 +164,16 @@ export function evolutionIn(chain: IEvolutionChain, games: IGame[], game?: IGame
     return [{ ...node, methods, evolvesTo }]
   }
   return visit(chain)
+}
+
+/**
+ * The forms a Pokémon has in a game: those with moves there (no Mega Charizard in Red / Blue,
+ * no Alolan Raichu before Sun / Moon). Gigantamax forms have no moves of their own; they're
+ * Sword / Shield's. The default form is always kept, for Pokémon not in the game at all.
+ */
+export function formsIn(forms: IForm[], game?: IGame) {
+  if (!game) return forms
+  return forms.filter((form, index) =>
+    !index || (Object.keys(form.learnset).length ? form.learnset[game.id]?.length : game.id === 'sword-shield'),
+  )
 }

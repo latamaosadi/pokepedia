@@ -1,6 +1,7 @@
 import type {
   IEvolutionChain,
   IForm,
+  IHeldItem,
   ILearnedMove,
   INamedResource,
   IPokemonInfo,
@@ -20,6 +21,22 @@ const STAT_LABELS: Record<string, string> = {
   'special-defense': 'Sp. Def',
   speed: 'Speed',
   special: 'Special',
+}
+
+const GROWTH_RATES: Record<string, string> = {
+  'slow-then-very-fast': 'Erratic',
+  'fast-then-very-slow': 'Fluctuating',
+}
+// PokeAPI's egg group ids, where they differ from the games' names.
+const EGG_GROUPS: Record<string, string> = {
+  water1: 'Water 1',
+  water2: 'Water 2',
+  water3: 'Water 3',
+  humanshape: 'Human-Like',
+  indeterminate: 'Amorphous',
+  ground: 'Field',
+  plant: 'Grass',
+  'no-eggs': 'Undiscovered',
 }
 
 // Varieties that are battle-only or duplicates of another entry.
@@ -78,10 +95,22 @@ const toStat = (slot: Raw) => ({
   value: slot.base_stat,
 })
 const toAbility = (slot: Raw) => ({
+  id: slot.ability.name,
   name: titleCase(slot.ability.name),
   hidden: slot.is_hidden,
   slot: slot.slot,
 })
+
+function heldItems(items: Raw[]) {
+  const byVersion: Record<string, IHeldItem[]> = {}
+  for (const { item, version_details: details } of items) {
+    for (const { version, rarity } of details) {
+      byVersion[version.name] ??= []
+      byVersion[version.name].push({ name: titleCase(item.name), sprite: itemSprite(item.name), rarity })
+    }
+  }
+  return byVersion
+}
 
 function learnset(moves: Raw[]) {
   const byGame: Record<string, ILearnedMove[]> = {}
@@ -110,7 +139,11 @@ async function getForm(url: string, speciesName: string): Promise<IForm> {
     sprite: defaultSprite(pokemon.id),
     artwork: artwork(pokemon.id),
     stats: pokemon.stats.map(toStat),
+    evYield: pokemon.stats
+      .filter((slot: Raw) => slot.effort)
+      .map((slot: Raw) => ({ ...toStat(slot), value: slot.effort })),
     abilities: pokemon.abilities.map(toAbility),
+    heldItems: heldItems(pokemon.held_items),
     cry: pokemon.cries?.latest || pokemon.cries?.legacy || undefined,
     pastTypes: (pokemon.past_types ?? []).map((past: Raw) => [
       getIdFromUrl(past.generation.url),
@@ -156,5 +189,11 @@ export async function getPokemonInfo(id: string): Promise<IPokemonInfo> {
     ),
     forms,
     evolutionChain: chain ? buildEvolution(chain.chain) : null,
+    captureRate: species.capture_rate,
+    baseFriendship: species.base_happiness,
+    growthRate: GROWTH_RATES[species.growth_rate.name] ?? titleCase(species.growth_rate.name),
+    eggGroups: species.egg_groups.map(({ name }: Raw) => EGG_GROUPS[name] ?? titleCase(name)),
+    genderRate: species.gender_rate,
+    eggCycles: species.hatch_counter,
   }
 }

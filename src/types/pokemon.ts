@@ -53,6 +53,8 @@ export interface IStat {
 }
 
 export interface IAbility {
+  /** PokeAPI name, e.g. 'solar-power'. */
+  id: string
   name: string
   hidden: boolean
   slot: number
@@ -71,7 +73,11 @@ export interface IForm {
   sprite: string
   artwork: string
   stats: IStat[]
+  /** Effort values gained for defeating it, e.g. [{ name: 'Sp. Atk', value: 2 }]. */
+  evYield: IStat[]
   abilities: IAbility[]
+  /** Items it can hold in the wild, per version, e.g. heldItems.red… (none in Gen 1). */
+  heldItems: Record<string, IHeldItem[]>
   cry?: string
   // What changed since older games, for showing a form as it was in the selected game.
   pastTypes: Past<IType[]>[]
@@ -81,6 +87,13 @@ export interface IForm {
   pastAbilities: Past<{ slot: number; ability: IAbility | null }[]>[]
   /** Moves it learns in each game (version group), e.g. learnset['red-blue']. */
   learnset: Record<string, ILearnedMove[]>
+}
+
+export interface IHeldItem {
+  name: string
+  sprite: string
+  /** Chance in percent. */
+  rarity: number
 }
 
 export interface ILearnedMove {
@@ -128,6 +141,14 @@ export interface IPokemonInfo {
   entries: Record<string, string>
   forms: IForm[]
   evolutionChain: IEvolutionChain | null
+  /** 3 (hardest) to 255. */
+  captureRate: number
+  baseFriendship: number | null
+  growthRate: string
+  eggGroups: string[]
+  /** Chance of being female in eighths; -1 when genderless. */
+  genderRate: number
+  eggCycles: number
 }
 
 export interface IGame {

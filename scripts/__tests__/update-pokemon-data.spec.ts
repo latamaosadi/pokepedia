@@ -1,6 +1,8 @@
 import { describe, expect, test } from 'vitest'
 import {
+  buildAbilities,
   buildGames,
+  buildLearners,
   buildMachines,
   buildMoves,
   buildPokemonList,
@@ -214,4 +216,49 @@ test('buildMachines maps each kept game to its TM and HM labels', () => {
       new Set(['firered-leafgreen']),
     ),
   ).toEqual({ 'firered-leafgreen': { flamethrower: 'TM35', cut: 'HM01' } })
+})
+
+test('buildAbilities keeps the English effect, else the newest English game text', () => {
+  const en = ref('en', 'language/9')
+  const ja = ref('ja', 'language/11')
+  expect(
+    buildAbilities([
+      {
+        name: 'blaze',
+        effect_entries: [{ short_effect: 'Strengthens Fire moves\nat low HP.', language: en }],
+        flavor_text_entries: [{ flavor_text: 'Powers up Fire-type moves.', language: en }],
+      },
+      {
+        name: 'toxic-chain',
+        effect_entries: [],
+        flavor_text_entries: [
+          { flavor_text: 'Old text.', language: en },
+          { flavor_text: 'May badly poison\nthe target.', language: en },
+          { flavor_text: 'どく', language: ja },
+        ],
+      },
+      { name: 'mind-s-eye', effect_entries: [], flavor_text_entries: [] },
+    ]),
+  ).toEqual({ blaze: 'Strengthens Fire moves at low HP.', 'toxic-chain': 'May badly poison the target.' })
+})
+
+test('buildLearners lists who learns each move per kept game, by National Dex number', () => {
+  const learns = (move: string, ...groups: string[]) => ({
+    move: ref(move, 'move/1'),
+    version_group_details: groups.map((group) => ({ version_group: ref(group, 'version-group/1') })),
+  })
+  const pokemon = (id: number, ...moves: ReturnType<typeof learns>[]) =>
+    ({ id, moves, past_types: [] }) as PokemonResponse
+  expect(
+    buildLearners(
+      [
+        pokemon(6, learns('flamethrower', 'red-blue', 'red-blue', 'x-y')),
+        pokemon(4, learns('flamethrower', 'red-blue', 'colosseum'), learns('scratch', 'red-blue')),
+      ],
+      new Set(['red-blue', 'x-y']),
+    ),
+  ).toEqual({
+    'red-blue': { flamethrower: [4, 6], scratch: [4] },
+    'x-y': { flamethrower: [6] },
+  })
 })

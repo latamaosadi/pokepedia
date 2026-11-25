@@ -15,6 +15,12 @@ const responses: Record<string, unknown> = {
     genera: [{ language: en, genus: 'Flame Pokémon' }],
     color: ref('red'),
     shape: ref('upright'),
+    capture_rate: 45,
+    base_happiness: 50,
+    growth_rate: ref('medium-slow'),
+    egg_groups: [ref('monster'), ref('plant')],
+    gender_rate: 1,
+    hatch_counter: 20,
     flavor_text_entries: [
       { language: en, version: ref('red'), flavor_text: 'Spits fire that\nis hot enough to\nmelt boulders.\fKnown to cause' },
       { language: ref('ja'), version: ref('red'), flavor_text: 'くちから しゃくねつの ほのおを' },
@@ -34,8 +40,17 @@ const responses: Record<string, unknown> = {
     weight: 905,
     types: [{ type: ref('fire') }, { type: ref('flying') }],
     stats: [
-      { base_stat: 78, stat: ref('hp') },
-      { base_stat: 109, stat: ref('special-attack') },
+      { base_stat: 78, stat: ref('hp'), effort: 0 },
+      { base_stat: 109, stat: ref('special-attack'), effort: 3 },
+    ],
+    held_items: [
+      {
+        item: ref('charcoal'),
+        version_details: [
+          { rarity: 5, version: ref('x') },
+          { rarity: 5, version: ref('y') },
+        ],
+      },
     ],
     abilities: [
       { is_hidden: false, ability: ref('blaze') },
@@ -65,8 +80,9 @@ const responses: Record<string, unknown> = {
     height: 17,
     weight: 1105,
     types: [{ type: ref('fire') }, { type: ref('dragon') }],
-    stats: [{ base_stat: 78, stat: ref('hp') }],
+    stats: [{ base_stat: 78, stat: ref('hp'), effort: 0 }],
     abilities: [{ is_hidden: false, ability: ref('tough-claws') }],
+    held_items: [],
     cries: { latest: null, legacy: null },
     moves: [],
   },
@@ -113,6 +129,12 @@ describe('getPokemonInfo', () => {
         red: 'Spits fire that is hot enough to melt boulders. Known to cause',
         ruby: 'This Pokémon is a powerful flier.',
       },
+      captureRate: 45,
+      baseFriendship: 50,
+      growthRate: 'Medium Slow',
+      eggGroups: ['Monster', 'Grass'],
+      genderRate: 1,
+      eggCycles: 20,
     })
     // Totem form is hidden.
     expect(info.forms.map(({ name, types, height, weight }) => ({ name, types, height, weight })))
@@ -130,6 +152,11 @@ describe('getPokemonInfo', () => {
         { name: 'Blaze', hidden: false },
         { name: 'Solar Power', hidden: true },
       ],
+      evYield: [{ name: 'Sp. Atk', value: 3 }],
+      heldItems: {
+        x: [{ name: 'Charcoal', sprite: expect.stringContaining('charcoal'), rarity: 5 }],
+        y: [{ name: 'Charcoal', sprite: expect.stringContaining('charcoal'), rarity: 5 }],
+      },
       cry: 'https://example.test/6.ogg',
       // Kept to show the form as it was in older games.
       pastTypes: [],

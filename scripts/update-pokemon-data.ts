@@ -1,11 +1,13 @@
 // Regenerates the data shipped with the app (Pokémon list, type charts, games and moves),
 // so a first visit needs no API calls. Run when new Pokémon or games are released:
 //   bun run update-data
-import { writeFile } from 'node:fs/promises'
+import { mkdir, writeFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 
 const API = 'https://pokeapi.co/api/v2'
 const OUT_DIR = new URL('../src/data/', import.meta.url)
+// Fetched only when needed, so served as is rather than bundled.
+const LEARNERS_DIR = new URL('../public/learners/', import.meta.url)
 // Not real types: "unknown" and "shadow" have no Pokémon in the Dex, "stellar" is a Tera type.
 const SKIPPED_TYPES = ['unknown', 'shadow', 'stellar']
 // Japan-only releases and side or competitive games, which have no regional Pokédex to play through.
@@ -37,7 +39,7 @@ export interface ColorResponse {
 
 export interface PokemonResponse {
   id: number
-  moves: { version_group_details: { version_group: NamedResource }[] }[]
+  moves: { move: NamedResource; version_group_details: { version_group: NamedResource }[] }[]
   /** Types as they were up to and including `generation`. */
   past_types: { generation: NamedResource; types: { slot: number; type: NamedResource }[] }[]
 }
@@ -76,6 +78,12 @@ export interface MachineResponse {
   item: NamedResource
   move: NamedResource
   version_group: NamedResource
+}
+
+export interface AbilityResponse {
+  name: string
+  effect_entries: { short_effect: string; language: NamedResource }[]
+  flavor_text_entries: { flavor_text: string; language: NamedResource }[]
 }
 
 export interface PokemonEntry {
@@ -256,6 +264,40 @@ export function buildMachines(machines: MachineResponse[], games: Set<string>) {
   return byGame
 }
 
+/** Ability → what it does, in English, e.g. { blaze: 'Strengthens Fire moves…' }. */
+export function buildAbilities(abilities: AbilityResponse[]) {
+  const english = (entry: { language: NamedResource }) => entry.language.name === 'en'
+  return Object.fromEntries(
+    abilities.flatMap((ability) => {
+      // The newest abilities only have the games' own text.
+      const text =
+        ability.effect_entries.find(english)?.short_effect ??
+        ability.flavor_text_entries.filter(english).pop()?.flavor_text
+      return text ? [[ability.name, text.replace(/\s+/g, ' ')]] : []
+    }),
+  )
+}
+
+/** Game → move → National Dex numbers of the Pokémon that learn it there, in number order. */
+export function buildLearners(pokemon: PokemonResponse[], games: Set<string>) {
+  const byGame: Record<string, Record<string, Set<number>>> = {}
+  for (const { id, moves } of [...pokemon].sort((a, b) => a.id - b.id)) {
+    for (const { move, version_group_details: details } of moves) {
+      for (const { version_group: group } of details) {
+        if (!games.has(group.name)) continue
+        byGame[group.name] ??= {}
+        ;(byGame[group.name][move.name] ??= new Set()).add(id)
+      }
+    }
+  }
+  return Object.fromEntries(
+    Object.entries(byGame).map(([game, moves]) => [
+      game,
+      Object.fromEntries(Object.entries(moves).map(([move, ids]) => [move, [...ids]])),
+    ]),
+  )
+}
+
 async function getJson<T>(url: string): Promise<T> {
   for (let attempt = 1; ; attempt++) {
     const response = await fetch(url)
@@ -308,9 +350,10 @@ async function main() {
   )
   const games = buildGames(groups, versionNames, pokedexes, withLearnsets)
 
-  console.log('Fetching moves and machines…')
+  console.log('Fetching moves, machines and abilities…')
   const moves = await getAll<MoveResponse>(await listUrls('move'))
   const machines = await getAll<MachineResponse>(await listUrls('machine'))
+  const abilities = await getAll<AbilityResponse>(await listUrls('ability'))
   // Every version group's order, so past move values from skipped games still place correctly.
   const gameOrder = new Map(groups.map((g) => [g.name, g.order]))
 
@@ -325,6 +368,11 @@ async function main() {
     moves: buildMoves(moves, gameOrder),
     machines: buildMachines(machines, new Set(games.map((g) => g.id))),
   })
+  await write('abilities.json', buildAbilities(abilities))
+  await mkdir(LEARNERS_DIR, { recursive: true })
+  for (const [game, learners] of Object.entries(buildLearners(pokemon, new Set(games.map((g) => g.id))))) {
+    await writeFile(new URL(`${game}.json`, LEARNERS_DIR), JSON.stringify(learners) + '\n')
+  }
   console.log(
     `Wrote ${list.length} Pokémon, ${types.length} types, ${games.length} games and ${moves.length} moves to src/data/`,
   )
