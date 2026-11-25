@@ -77,7 +77,7 @@ const responses: Record<string, unknown> = {
       evolves_to: [
         {
           species: ref('charmeleon', 'pokemon-species/5'),
-          evolution_details: [levelUp({ min_level: 16 })],
+          evolution_details: [levelUp({ min_level: 16, version_group: ref('red-blue') })],
           evolves_to: [
             {
               species: ref('charizard', 'pokemon-species/6'),
@@ -144,9 +144,12 @@ describe('getPokemonInfo', () => {
 
     const chain = info.evolutionChain!
     const charmeleon = chain.evolvesTo[0]
-    expect([chain.name, chain.number, chain.requirement]).toEqual(['charmander', 4, undefined])
-    expect([charmeleon.formattedName, charmeleon.requirement]).toEqual(['Charmeleon', 'Lv. 16'])
-    expect(charmeleon.evolvesTo.map((p) => [p.name, p.requirement])).toEqual([['charizard', 'Lv. 36']])
+    expect([chain.name, chain.number, chain.methods]).toEqual(['charmander', 4, []])
+    expect(charmeleon.formattedName).toBe('Charmeleon')
+    expect(charmeleon.methods).toEqual([
+      { text: 'Lv. 16', itemSprite: undefined, game: 'red-blue', location: false },
+    ])
+    expect(charmeleon.evolvesTo.map((p) => [p.name, p.methods[0].text])).toEqual([['charizard', 'Lv. 36']])
   })
 
   test('rejects when the API fails', async () => {

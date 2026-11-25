@@ -57,16 +57,17 @@ export function describeEvolution(detail: Raw): string {
 
 function buildEvolution(node: Raw): IEvolutionChain {
   const number = getIdFromUrl(node.species.url)
-  // ponytail: only the first of several evolution methods is shown (e.g. Leafeon's
-  // location vs. Leaf Stone); show all if anyone asks.
-  const detail = node.evolution_details[0]
   return {
     name: node.species.name,
     formattedName: titleCase(node.species.name),
     number,
     sprite: defaultSprite(number),
-    requirement: detail ? describeEvolution(detail) : undefined,
-    itemSprite: detail?.item ? itemSprite(detail.item.name) : undefined,
+    methods: node.evolution_details.map((detail: Raw) => ({
+      text: describeEvolution(detail),
+      itemSprite: detail.item ? itemSprite(detail.item.name) : undefined,
+      game: detail.version_group?.name,
+      location: Boolean(detail.location),
+    })),
     evolvesTo: node.evolves_to.map(buildEvolution),
   }
 }

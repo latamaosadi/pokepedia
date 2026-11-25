@@ -1,5 +1,7 @@
 import type {
   IAbility,
+  IEvolutionChain,
+  IEvolutionMethod,
   IForm,
   IGame,
   ILearnedMove,
@@ -110,4 +112,55 @@ export function movesInGame(learnset: ILearnedMove[], game: IGame, data: MoveDat
     const machine = learned.method === 'machine' ? data.machines[game.id]?.[learned.move] : undefined
     return [{ ...learned, machine, type: type as PokemonType, category, power, accuracy, pp }]
   })
+}
+
+// The last National Dex number introduced in each generation.
+const LAST_NUMBER = [151, 251, 386, 493, 649, 721, 809, 905, 1025]
+const existsIn = (number: number, generation: number) =>
+  number <= (LAST_NUMBER[generation - 1] ?? Infinity)
+
+/**
+ * The ways to evolve in a game. PokeAPI lists a method under the game it arrived in, and it
+ * holds in later games until a newer one replaces it (Sylveon's affection became friendship).
+ * Methods tied to a place only apply within that generation's games.
+ */
+// ponytail: same-generation is a stand-in for same region, so HeartGold / SoulSilver gets
+// Leafeon's Eterna Forest and Legends: Arceus its Brilliant Diamond one. Bundle location
+// regions if that matters.
+function methodsIn(methods: IEvolutionMethod[], game: IGame, games: IGame[]) {
+  const placed = methods.flatMap((method) => {
+    if (!method.game) return [{ method, order: 0 }]
+    const from = games.find((g) => g.id === method.game || g.dlc.includes(method.game!))
+    // Side games like Colosseum, or a later game than this one.
+    if (!from || from.order > game.order) return []
+    if (method.location && from.generation !== game.generation) return []
+    return [{ method, order: from.order }]
+  })
+  const newest = (location: boolean) => {
+    const own = placed.filter((p) => p.method.location === location)
+    const order = Math.max(...own.map((p) => p.order))
+    return own.filter((p) => p.order === order).map((p) => p.method)
+  }
+  const chosen = [...newest(false), ...newest(true)]
+  // Wormadam's three cloaks share one method.
+  return [...new Map(chosen.map((method) => [method.text, method])).values()]
+}
+
+/**
+ * An evolution line as it was in a game: Pokémon from later generations are left out (no
+ * Pichu or Espeon in Red / Blue), which can split a line into several, and each evolution
+ * shows that game's methods. Without a game, the full line with the newest game's methods.
+ */
+export function evolutionIn(chain: IEvolutionChain, games: IGame[], game?: IGame): IEvolutionChain[] {
+  const methodsGame = game ?? games[games.length - 1]
+  const visit = (node: IEvolutionChain): IEvolutionChain[] => {
+    const evolvesTo = node.evolvesTo.flatMap(visit)
+    // A Pokémon that didn't exist yet: what it evolves into starts its own line.
+    if (game && !existsIn(node.number, game.generation)) {
+      return evolvesTo.map((next) => ({ ...next, methods: [] }))
+    }
+    const methods = methodsGame ? methodsIn(node.methods, methodsGame, games) : node.methods
+    return [{ ...node, methods, evolvesTo }]
+  }
+  return visit(chain)
 }

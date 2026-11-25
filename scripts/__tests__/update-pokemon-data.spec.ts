@@ -121,7 +121,7 @@ describe('buildGames', () => {
       pokedexes: pokedexes.map((p) => ref(p, 'pokedex/1')),
     }) satisfies VersionGroupResponse
   const groups = [
-    group('scarlet-violet', 27, 9, ['scarlet', 'violet'], ['paldea']),
+    group('scarlet-violet', 27, 9, ['scarlet', 'violet'], ['paldea', 'kitakami']),
     group('red-blue', 3, 1, ['red', 'blue'], ['kanto']),
     group('the-teal-mask', 28, 9, ['the-teal-mask'], ['kitakami']),
     group('colosseum', 12, 3, ['colosseum'], []),
@@ -143,7 +143,7 @@ describe('buildGames', () => {
     { name: 'paldea', pokemon_entries: [{ entry_number: 1, pokemon_species: ref('sprigatito', 'pokemon-species/906') }] },
   ]
 
-  test('lists playable games in release order, with their Pokédexes in entry order', () => {
+  test('lists playable games in release order, with their DLC and Pokédexes in entry order', () => {
     const learnsets = new Set(['red-blue', 'scarlet-violet', 'colosseum'])
     expect(buildGames(groups, names, dexes, learnsets)).toEqual([
       {
@@ -155,6 +155,7 @@ describe('buildGames', () => {
           { id: 'red', name: 'Red' },
           { id: 'blue', name: 'Blue' },
         ],
+        dlc: [],
         dexes: [{ name: 'kanto', start: 1, species: [1, 2] }],
       },
       {
@@ -166,7 +167,11 @@ describe('buildGames', () => {
           { id: 'scarlet', name: 'Scarlet' },
           { id: 'violet', name: 'Violet' },
         ],
-        dexes: [{ name: 'paldea', start: 1, species: [906] }],
+        dlc: ['the-teal-mask'],
+        dexes: [
+          { name: 'paldea', start: 1, species: [906] },
+          { name: 'kitakami', start: 1, species: [] },
+        ],
       },
     ])
   })

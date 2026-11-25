@@ -94,6 +94,8 @@ export interface Game {
   order: number
   /** The versions sold as this game, e.g. Red and Blue; each has its own Pokédex entries. */
   versions: { id: string; name: string }[]
+  /** Its DLC's version groups, e.g. the-teal-mask, which PokeAPI tags some evolutions with. */
+  dlc: string[]
   /** The game's Pokédexes (DLC areas get their own); species in entry order, numbered from `start`. */
   dexes: { name: string; start: number; species: number[] }[]
 }
@@ -193,6 +195,8 @@ export function buildGames(
   withLearnsets: Set<string>,
 ): Game[] {
   const dexByName = new Map(pokedexes.map((dex) => [dex.name, dex]))
+  // DLC has no learnsets of its own and only Pokédexes its base game already lists.
+  const dlc = groups.filter((group) => !withLearnsets.has(group.name) && group.pokedexes.length)
   return groups
     .filter((group) => !SKIPPED_GAMES.includes(group.name) && withLearnsets.has(group.name))
     .sort((a, b) => a.order - b.order)
@@ -204,6 +208,9 @@ export function buildGames(
         generation: idFromUrl(group.generation.url),
         order: group.order,
         versions,
+        dlc: dlc
+          .filter((extra) => extra.pokedexes.every((dex) => group.pokedexes.some((own) => own.name === dex.name)))
+          .map((extra) => extra.name),
         dexes: group.pokedexes.map(({ name }) => {
           const entries = [...(dexByName.get(name)?.pokemon_entries ?? [])].sort(
             (a, b) => a.entry_number - b.entry_number,

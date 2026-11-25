@@ -26,6 +26,7 @@ Ideas for improving Poképedia, ranked by value against effort.
 - [x] **Era-accurate data.** With a game picked, types, base stats (Gen 1's Special), abilities (none before Gen 3, no hidden ones before Gen 5) and type matchups are as they were then. Bundled from PokeAPI's past values by `bun run update-data`.
 - [x] **Movesets.** The detail page lists level-up, TM/HM/TR, egg and tutor moves for the game, with each move's type, category, power, accuracy and PP in that game.
 - [x] **Per-game Pokédex entries.** The About tab shows the selected game's entry, one per version when they differ (Sun and Moon), or the newest game's when there's none.
+- [x] **Evolution by game.** The Evolution tab leaves out Pokémon from later generations and shows each evolution's method in the selected game (Leafeon at Eterna Forest in Diamond / Pearl, Leaf Stone from Sword / Shield), as cards in each Pokémon's colour. Location methods apply per generation, a stand-in for region.
 - [ ] **Where to find it.** Wild encounter locations per game. PokeAPI only has them up to Gen 7.
 - [ ] **Game in the URL.** The selected game is remembered per device. A `?game=` parameter would make shared links open in the same game.
 
@@ -36,7 +37,6 @@ Ideas for improving Poképedia, ranked by value against effort.
 ## Loose ends
 
 - [ ] **Labels hidden by artwork.** On some home cards the artwork covers the type badges (Miraidon's tail over its Electric badge).
-- [ ] **Only one evolution method shown.** Leafeon shows "at Eterna Forest" but not Leaf Stone. Marked with a `ponytail:` comment in `src/services/pokemon.ts`.
 - [ ] **Sprite cache has no limit.** The `raw.githubusercontent.com` cache grows with every Pokémon viewed. Add an `expiration` setting like the `pokeapi` cache has in `vite.config.ts`.
 - [x] **Type order differs between pages.** The shipped list stores types in the game's order, so cards and the detail page agree.
 - [ ] **Noisy screen-reader names.** Home card links are announced as "Charmander #4 Fire Charmander Card". An `aria-label` with just the name would be cleaner.

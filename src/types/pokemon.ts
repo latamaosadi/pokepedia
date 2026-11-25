@@ -100,9 +100,19 @@ export interface IMoveRow extends ILearnedMove {
   pp: number | null
 }
 
-export interface IEvolutionChain extends IPokemon {
-  requirement?: string
+export interface IEvolutionMethod {
+  /** e.g. "Lv. 16", "Water Stone", "at Eterna Forest" */
+  text: string
   itemSprite?: string
+  /** The version group PokeAPI lists the method for; it holds in later games until replaced. */
+  game?: string
+  /** Tied to a place in that game's region, like Leafeon's Moss Rock. */
+  location: boolean
+}
+
+export interface IEvolutionChain extends IPokemon {
+  /** Ways to evolve into this Pokémon, across all games. */
+  methods: IEvolutionMethod[]
   evolvesTo: IEvolutionChain[]
 }
 
@@ -127,6 +137,8 @@ export interface IGame {
   order: number
   /** The versions sold as this game, e.g. Red and Blue; each has its own Pokédex entries. */
   versions: { id: string; name: string }[]
+  /** Its DLC's version groups, e.g. the-teal-mask, which PokeAPI tags some evolutions with. */
+  dlc: string[]
   /** The game's Pokédexes (DLC areas get their own); species in entry order, numbered from `start`. */
   dexes: { name: string; start: number; species: number[] }[]
 }

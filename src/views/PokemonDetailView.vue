@@ -31,10 +31,10 @@ import GameSelect from '@/components/GameSelect.vue'
 import TypeBadge from '@/components/TypeBadge.vue'
 import { lastListView } from '@/router'
 import { usePokemonStore } from '@/stores/pokemon'
-import type { IPokemon, IPokemonInfo, PokemonType } from '@/types/pokemon'
+import type { IEvolutionChain, IPokemon, IPokemonInfo, PokemonType } from '@/types/pokemon'
 import { artwork, defaultSprite } from '@/utils/sprite'
 import { padNumber, titleCase } from '@/utils/string'
-import { formInGeneration, pokedexEntries } from '@/utils/game'
+import { evolutionIn, formInGeneration, pokedexEntries } from '@/utils/game'
 import { defensiveMatchups } from '@/utils/type-matchups'
 import { foldPage, gradientFrom, polygonPath } from '@/utils/page-fold'
 import {
@@ -74,6 +74,14 @@ const movesGame = computed(
 )
 const learnset = computed(() => (movesGame.value && form.value?.learnset[movesGame.value.id]) || [])
 const dexEntries = computed(() => pokedexEntries(info.value?.entries ?? {}, pokemonStore.games, pokemonStore.game))
+const evolutionLines = computed(() =>
+  info.value?.evolutionChain
+    ? evolutionIn(info.value.evolutionChain, pokemonStore.games, pokemonStore.game)
+    : [],
+)
+// Lines branching at most in two (Wurmple) fit left to right; Eevee's eight need the grid.
+const fitsInRow = (line: IEvolutionChain): boolean =>
+  line.evolvesTo.length <= 2 && line.evolvesTo.every(fitsInRow)
 
 // Sections of the page, one shown at a time. The choice is remembered so paging through
 // Pokémon (or coming back later) stays on, say, Moves.
@@ -689,7 +697,20 @@ watch(id, (value) => value && load(value), { immediate: true })
           </section>
 
           <section v-else-if="tab === 'evolution' && info.evolutionChain" :id="panelId('evolution')">
-            <EvolutionChain :evolution="info.evolutionChain" />
+            <p
+              v-if="evolutionLines.every((line) => !line.evolvesTo.length)"
+              class="mb-3 text-sm text-neutral-500 dark:text-neutral-400"
+            >
+              No evolutions<template v-if="pokemonStore.game"> in {{ pokemonStore.game.name }}</template>.
+            </p>
+            <div class="flex flex-wrap items-start justify-center gap-6">
+              <EvolutionChain
+                v-for="line in evolutionLines"
+                :key="line.name"
+                :evolution="line"
+                :horizontal="evolutionLines.every(fitsInRow)"
+              />
+            </div>
           </section>
         </div>
       </div>
