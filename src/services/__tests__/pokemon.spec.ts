@@ -40,6 +40,15 @@ const responses: Record<string, unknown> = {
       { is_hidden: true, ability: ref('solar-power') },
     ],
     cries: { latest: 'https://example.test/6.ogg', legacy: null },
+    moves: [
+      {
+        move: ref('flamethrower', 'move/53'),
+        version_group_details: [
+          { level_learned_at: 0, move_learn_method: ref('machine'), version_group: ref('firered-leafgreen') },
+          { level_learned_at: 46, move_learn_method: ref('level-up'), version_group: ref('x-y') },
+        ],
+      },
+    ],
     past_stats: [{ generation: ref('generation-i', 'generation/1'), stats: [{ base_stat: 85, stat: ref('special') }] }],
     past_abilities: [
       {
@@ -57,6 +66,7 @@ const responses: Record<string, unknown> = {
     stats: [{ base_stat: 78, stat: ref('hp') }],
     abilities: [{ is_hidden: false, ability: ref('tough-claws') }],
     cries: { latest: null, legacy: null },
+    moves: [],
   },
   [`${API}/evolution-chain/2/`]: {
     chain: {
@@ -120,6 +130,10 @@ describe('getPokemonInfo', () => {
       pastTypes: [],
       pastStats: [[1, [{ name: 'Special', value: 85 }]]],
       pastAbilities: [[4, [{ slot: 3, ability: null }]]],
+      learnset: {
+        'firered-leafgreen': [{ move: 'flamethrower', method: 'machine', level: 0 }],
+        'x-y': [{ move: 'flamethrower', method: 'level-up', level: 46 }],
+      },
     })
     expect(info.forms[1].cry).toBeUndefined()
 

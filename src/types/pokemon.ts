@@ -79,6 +79,25 @@ export interface IForm {
   pastStats: Past<IStat[]>[]
   /** By slot; null where the slot was empty (no hidden ability yet). */
   pastAbilities: Past<{ slot: number; ability: IAbility | null }[]>[]
+  /** Moves it learns in each game (version group), e.g. learnset['red-blue']. */
+  learnset: Record<string, ILearnedMove[]>
+}
+
+export interface ILearnedMove {
+  move: string
+  /** PokeAPI learn method: 'level-up', 'machine', 'egg', 'tutor'… */
+  method: string
+  level: number
+}
+
+/** A move as it was in a game, ready to list. */
+export interface IMoveRow extends ILearnedMove {
+  machine?: string
+  type: PokemonType
+  category: string
+  power: number | null
+  accuracy: number | null
+  pp: number | null
 }
 
 export interface IEvolutionChain extends IPokemon {

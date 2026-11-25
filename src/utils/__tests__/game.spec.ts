@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import type { IForm } from '@/types/pokemon'
-import { formInGeneration } from '../game'
+import { formInGeneration, movesInGame, type MoveData } from '../game'
 
 const stat = (name: string, value: number) => ({ name, value })
 const ability = (name: string, slot: number, hidden = false) => ({ name, slot, hidden })
@@ -53,5 +53,38 @@ describe('formInGeneration', () => {
     ])
     expect(formInGeneration(clefable, 5).types).toEqual([{ name: 'normal' }])
     expect(formInGeneration(clefable, 6)).toEqual(formInGeneration(clefable))
+  })
+})
+
+describe('movesInGame', () => {
+  const data: MoveData = {
+    moves: {
+      flamethrower: ['fire', 'special', 90, 100, 15, [[17, 95, null, null, null]]],
+      bite: ['dark', 'physical', 60, 100, 25, [[5, null, null, null, 'normal']]],
+      growl: ['normal', 'status', null, 100, 40],
+    },
+    machines: { 'firered-leafgreen': { flamethrower: 'TM35' } },
+  }
+  const game = (id: string, generation: number, order: number) => ({ id, name: id, generation, order, dexes: [] })
+  const learnset = [
+    { move: 'flamethrower', method: 'machine', level: 0 },
+    { move: 'bite', method: 'level-up', level: 12 },
+    { move: 'growl', method: 'level-up', level: 1 },
+  ]
+
+  test('gives the TM number and the power the move had in that game', () => {
+    const [flamethrower] = movesInGame(learnset, game('firered-leafgreen', 3, 11), data)
+    expect(flamethrower).toMatchObject({ machine: 'TM35', type: 'fire', category: 'special', power: 95, pp: 15 })
+    expect(movesInGame(learnset, game('x-y', 6, 17), data)[0].power).toBe(90)
+  })
+
+  test("before Gen 4 a move's type decides its category", () => {
+    const moves = (id: string, generation: number, order: number) =>
+      Object.fromEntries(movesInGame(learnset, game(id, generation, order), data).map((m) => [m.move, m]))
+    // Bite was a Normal (so physical) move in Gen 1, then Dark and so special in Gens 2 and 3.
+    expect(moves('red-blue', 1, 3).bite).toMatchObject({ type: 'normal', category: 'physical' })
+    expect(moves('gold-silver', 2, 5).bite).toMatchObject({ type: 'dark', category: 'special' })
+    expect(moves('diamond-pearl', 4, 12).bite).toMatchObject({ type: 'dark', category: 'physical' })
+    expect(moves('red-blue', 1, 3).growl.category).toBe('status')
   })
 })

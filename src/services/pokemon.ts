@@ -1,6 +1,7 @@
 import type {
   IEvolutionChain,
   IForm,
+  ILearnedMove,
   INamedResource,
   IPokemonInfo,
 } from '@/types/pokemon'
@@ -77,6 +78,21 @@ const toAbility = (slot: Raw) => ({
   slot: slot.slot,
 })
 
+function learnset(moves: Raw[]) {
+  const byGame: Record<string, ILearnedMove[]> = {}
+  for (const { move, version_group_details: details } of moves) {
+    for (const detail of details) {
+      byGame[detail.version_group.name] ??= []
+      byGame[detail.version_group.name].push({
+        move: move.name,
+        method: detail.move_learn_method.name,
+        level: detail.level_learned_at,
+      })
+    }
+  }
+  return byGame
+}
+
 async function getForm(url: string, speciesName: string): Promise<IForm> {
   const pokemon = await getJson(url)
   return {
@@ -99,6 +115,7 @@ async function getForm(url: string, speciesName: string): Promise<IForm> {
       getIdFromUrl(past.generation.url),
       past.stats.map(toStat),
     ]),
+    learnset: learnset(pokemon.moves),
     pastAbilities: (pokemon.past_abilities ?? []).map((past: Raw) => [
       getIdFromUrl(past.generation.url),
       past.abilities.map((slot: Raw) => ({

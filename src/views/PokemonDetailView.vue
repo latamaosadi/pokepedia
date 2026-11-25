@@ -25,6 +25,7 @@ function fetchInfo(id: string) {
 import EvolutionChain from '@/components/EvolutionChain.vue'
 import PokemonCard from '@/components/PokemonCard.vue'
 import ShinyToggle from '@/components/ShinyToggle.vue'
+import MoveList from '@/components/MoveList.vue'
 import SizeComparison from '@/components/SizeComparison.vue'
 import TypeBadge from '@/components/TypeBadge.vue'
 import { lastListView } from '@/router'
@@ -63,6 +64,13 @@ const generation = computed(() => pokemonStore.game?.generation)
 const shown = computed(() => form.value && formInGeneration(form.value, generation.value))
 // This Pokémon's entry in the selected game's Pokédex, if it's in it.
 const dexEntry = computed(() => pokemonStore.dex.find((p) => p.number === info.value?.number))
+// Moves come from the selected game, or the newest game this form has moves in.
+const movesGame = computed(
+  () =>
+    pokemonStore.game ??
+    [...pokemonStore.games].reverse().find((game) => form.value?.learnset[game.id]?.length),
+)
+const learnset = computed(() => (movesGame.value && form.value?.learnset[movesGame.value.id]) || [])
 const card = computed((): IPokemon | undefined =>
   info.value && form.value
     ? {
@@ -586,6 +594,19 @@ watch(id, (value) => value && load(value), { immediate: true })
               <dt class="font-bold">Total</dt>
               <dd class="text-right font-bold">{{ statsTotal }}</dd>
             </dl>
+          </section>
+
+          <section v-if="form && movesGame">
+            <h2 class="font-inter text-2xl font-black">Moves</h2>
+            <p class="mb-2 text-sm text-neutral-500 dark:text-neutral-400">
+              In {{ movesGame.name }}<template v-if="!pokemonStore.game">, the latest game with
+                move data. Pick a game in the list to see another</template
+              >
+            </p>
+            <MoveList v-if="learnset.length" :key="`${form.id}-${movesGame.id}`" :learnset :game="movesGame" />
+            <p v-else class="font-pixel text-xl">
+              {{ form.name }} can't be obtained in {{ movesGame.name }}.
+            </p>
           </section>
 
           <section v-if="matchups.length">
