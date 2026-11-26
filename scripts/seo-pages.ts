@@ -17,6 +17,8 @@ export interface PageMeta {
   title: string
   description: string
   image?: string
+  /** Shown until the app starts, so crawlers that don't run JavaScript still see content. */
+  body?: string
 }
 
 const SITE_NAME = 'Poképedia'
@@ -44,18 +46,34 @@ export const listPages: PageMeta[] = [
     description:
       'Scroll through the National Pokédex one Pokémon at a time, with search, type filters, favorites and shiny artwork.',
   },
+  {
+    path: '/team',
+    title: `Pokémon Team Builder & Weakness Checker · ${SITE_NAME}`,
+    description:
+      "Build a team of six and see its shared weaknesses, resistances and the types it can't hit super effectively, with the type chart of the game you're playing.",
+  },
 ]
 
-export function pokemonPage({ number, name, types }: PokemonEntry): PageMeta {
+const link = (entry: PokemonEntry) => `<a href="/dex/${entry.name}">${escapeHtml(titleCase(entry.name))}</a>`
+
+export function pokemonPage(entry: PokemonEntry, previous?: PokemonEntry, next?: PokemonEntry): PageMeta {
+  const { number, name, types } = entry
   const displayName = titleCase(name)
   const typeLabel = types.map(titleCase).join('/')
   const dexNumber = String(number).padStart(4, '0')
   const article = /^[aeiou]/i.test(typeLabel) ? 'an' : 'a'
+  const description = `${displayName} is ${article} ${typeLabel}-type Pokémon, #${number} in the National Pokédex. See its base stats, the moves it learns in each game, its type weaknesses, abilities, evolutions and forms.`
+  const neighbours = [previous && `Previous: ${link(previous)}`, next && `Next: ${link(next)}`].filter(Boolean)
   return {
     path: `/dex/${name}`,
-    title: `${displayName} (#${dexNumber}) · ${typeLabel} · ${SITE_NAME}`,
-    description: `${displayName} is ${article} ${typeLabel}-type Pokémon, #${number} in the National Pokédex. See its base stats, abilities, type matchups, forms and evolutions.`,
+    title: `${displayName} #${dexNumber} – Stats, Moves & Weaknesses · ${SITE_NAME}`,
+    description,
     image: artwork(number),
+    body: [
+      `<h1>${escapeHtml(displayName)} #${dexNumber}</h1>`,
+      `<p>${escapeHtml(description)}</p>`,
+      `<nav>${[...neighbours, '<a href="/">All Pokémon</a>'].join(' · ')}</nav>`,
+    ].join(''),
   }
 }
 
@@ -80,6 +98,7 @@ export function withMeta(html: string, meta: PageMeta, siteUrl: string) {
       `<meta name="description" content="${escapeHtml(meta.description)}" />`,
     )
     .replace('</head>', `  ${tags}\n  </head>`)
+    .replace('<div id="app"></div>', `<div id="app">${meta.body ?? ''}</div>`)
 }
 
 export function sitemap(siteUrl: string, pages: PageMeta[]) {
@@ -101,7 +120,8 @@ export function seoPages(siteUrl: string): Plugin {
     async closeBundle() {
       const outDir = join(config.root, config.build.outDir)
       const shell = await readFile(join(outDir, 'index.html'), 'utf8')
-      const pages = [...listPages, ...(pokemonData as PokemonEntry[]).map(pokemonPage)]
+      const pokemon = pokemonData as PokemonEntry[]
+      const pages = [...listPages, ...pokemon.map((entry, i) => pokemonPage(entry, pokemon[i - 1], pokemon[i + 1]))]
       await mkdir(join(outDir, 'dex'), { recursive: true })
       await Promise.all(
         pages.map((page) => writeFile(join(outDir, fileFor(page.path)), withMeta(shell, page, siteUrl))),

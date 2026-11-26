@@ -11,7 +11,7 @@ import { useTitle } from '@vueuse/core'
 import { computed, ref } from 'vue'
 
 const pokemonStore = usePokemonStore()
-useTitle('Team · Poképedia')
+useTitle('Pokémon Team Builder & Weakness Checker · Poképedia')
 
 const members = computed(() =>
   pokemonStore.team.flatMap((number) => {

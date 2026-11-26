@@ -35,7 +35,7 @@ import { lastListView } from '@/router'
 import { TEAM_SIZE, usePokemonStore } from '@/stores/pokemon'
 import type { IEvolutionChain, IPokemon, IPokemonInfo, PokemonType } from '@/types/pokemon'
 import { artwork, defaultSprite } from '@/utils/sprite'
-import { padNumber, titleCase } from '@/utils/string'
+import { padNumber } from '@/utils/string'
 import { byVersion, evolutionIn, formInGeneration, formsIn, versionsIn } from '@/utils/game'
 import { defensiveMatchups } from '@/utils/type-matchups'
 import { foldPage, gradientFrom, polygonPath } from '@/utils/page-fold'
@@ -431,12 +431,12 @@ const coverStyle = computed(() => {
   return { clipPath }
 })
 
-// Same format as the prerendered page (scripts/seo-pages.ts): name, number and types.
-useTitle(() => {
-  if (!info.value) return 'Poképedia'
-  const types = (info.value.forms[0]?.types ?? []).map((t) => titleCase(t.name)).join('/')
-  return `${info.value.formattedName} (#${padNumber(info.value.number)}) · ${types} · Poképedia`
-})
+// Same as the prerendered page's title (scripts/seo-pages.ts).
+useTitle(() =>
+  info.value
+    ? `${info.value.formattedName} #${padNumber(info.value.number)} – Stats, Moves & Weaknesses · Poképedia`
+    : 'Poképedia',
+)
 
 function show(data: IPokemonInfo) {
   info.value = data

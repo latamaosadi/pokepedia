@@ -24,7 +24,7 @@ const pwaOptions: Partial<VitePWAOptions> = {
   workbox: {
     globPatterns: ['**/*.{html,js,css,png,svg,ico,woff,woff2}'],
     // Per-page HTML exists for search engines and link previews; the app itself never loads it.
-    globIgnores: ['dex.html', 'dex/**'],
+    globIgnores: ['dex.html', 'team.html', 'dex/**'],
     runtimeCaching: [
       {
         urlPattern: /^https:\/\/raw\.githubusercontent\.com\/.*/i,
