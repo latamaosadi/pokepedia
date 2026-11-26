@@ -86,11 +86,18 @@ export interface AbilityResponse {
   flavor_text_entries: { flavor_text: string; language: NamedResource }[]
 }
 
+export interface SpeciesResponse {
+  id: number
+  genera: { genus: string; language: NamedResource }[]
+}
+
 export interface PokemonEntry {
   number: number
   name: string
   types: string[]
   color: string
+  /** Its category, e.g. "Flame Pokémon" for Charizard. */
+  genus?: string
   /** [last generation, types] for Pokémon whose types changed, oldest first. */
   pastTypes?: [number, string[]][]
 }
@@ -120,6 +127,7 @@ export function buildPokemonList(
   types: TypeResponse[],
   colors: ColorResponse[],
   pokemon: PokemonResponse[] = [],
+  speciesDetails: SpeciesResponse[] = [],
 ): PokemonEntry[] {
   // Each type lists the default Pokémon (same id as the species) with its slot,
   // which gives the game's type order, e.g. Charizard is Fire first, then Flying.
@@ -134,6 +142,9 @@ export function buildPokemonList(
   for (const color of colors) {
     for (const entry of color.pokemon_species) colorById.set(idFromUrl(entry.url), color.name)
   }
+  const genusById = new Map(
+    speciesDetails.map((s) => [s.id, s.genera.find((g) => g.language.name === 'en')?.genus]),
+  )
   const pastTypesById = new Map(
     pokemon
       .filter((p) => p.past_types.length)
@@ -151,11 +162,13 @@ export function buildPokemonList(
   return species.map(({ name, url }) => {
     const number = idFromUrl(url)
     const pastTypes = pastTypesById.get(number)
+    const genus = genusById.get(number)
     return {
       number,
       name,
       types: (typesById.get(number) ?? []).sort((a, b) => a.slot - b.slot).map((t) => t.name),
       color: colorById.get(number) ?? '',
+      ...(genus && { genus }),
       ...(pastTypes && { pastTypes }),
     }
   })
@@ -333,6 +346,7 @@ async function main() {
   const colors = await getAll<ColorResponse>(await listUrls('pokemon-color'))
   console.log('Fetching Pokémon…')
   const pokemon = await getAll<PokemonResponse>(species.map((s) => `${API}/pokemon/${idFromUrl(s.url)}`))
+  const speciesDetails = await getAll<SpeciesResponse>(species.map((s) => s.url))
 
   console.log('Fetching games…')
   const groups = await getAll<VersionGroupResponse>(await listUrls('version-group'))
@@ -357,7 +371,7 @@ async function main() {
   // Every version group's order, so past move values from skipped games still place correctly.
   const gameOrder = new Map(groups.map((g) => [g.name, g.order]))
 
-  const list = buildPokemonList(species, types, colors, pokemon)
+  const list = buildPokemonList(species, types, colors, pokemon, speciesDetails)
   const lastGeneration = Math.max(...games.map((g) => g.generation))
   const write = (file: string, data: unknown) =>
     writeFile(new URL(file, OUT_DIR), JSON.stringify(data) + '\n')

@@ -6,7 +6,8 @@
     "cypress.config.*",
     "nightwatch.conf.*",
     "playwright.config.*",
-    "scripts/**/*"
+    "scripts/**/*",
+    "src/utils/type-matchups.ts"
   ],
   "compilerOptions": {
     "composite": true,

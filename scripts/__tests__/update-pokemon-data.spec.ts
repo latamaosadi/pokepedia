@@ -77,6 +77,15 @@ describe('buildPokemonList', () => {
     expect(buildPokemonList(species, types, colors, pokemon)[1].pastTypes).toEqual([[5, ['normal']]])
     expect(buildPokemonList(species, types, colors, pokemon)[0]).not.toHaveProperty('pastTypes')
   })
+
+  test("adds its English category", () => {
+    const genera = [
+      { id: 6, genera: [{ genus: 'Pokémon Flamme', language: ref('fr', 'language/5') }, { genus: 'Flame Pokémon', language: ref('en', 'language/9') }] },
+    ]
+    const [charizard, clefairy] = buildPokemonList(species, types, colors, [], genera)
+    expect(charizard.genus).toBe('Flame Pokémon')
+    expect(clefairy).not.toHaveProperty('genus')
+  })
 })
 
 describe('buildTypeCharts', () => {

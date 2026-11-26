@@ -17,11 +17,11 @@ const shell = `<!doctype html>
 
 describe('pokemonPage', () => {
   test('names the Pokémon, its number and types', () => {
-    expect(pokemonPage({ number: 6, name: 'charizard', types: ['fire', 'flying'] })).toMatchObject({
+    expect(pokemonPage({ number: 6, name: 'charizard', types: ['fire', 'flying'], genus: 'Flame Pokémon' })).toMatchObject({
       path: '/dex/charizard',
       title: 'Charizard #0006 – Stats, Moves & Weaknesses · Poképedia',
       description:
-        'Charizard is a Fire/Flying-type Pokémon, #6 in the National Pokédex. See its base stats, the moves it learns in each game, its type weaknesses, abilities, evolutions and forms.',
+        'Charizard, the Flame Pokémon, is a Fire/Flying-type Pokémon, #6 in the National Pokédex. Weak to Rock (4×), Water, Electric. See its stats, moves in each game, abilities and evolutions.',
       image:
         'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/6.png',
     })
@@ -36,6 +36,13 @@ describe('pokemonPage', () => {
     expect(body).toContain('<h1>Mr Mime #0122</h1>')
     expect(body).toContain('Previous: <a href="/dex/starmie">Starmie</a>')
     expect(body).toContain('Next: <a href="/dex/scyther">Scyther</a>')
+  })
+
+  test('lists its weaknesses, resistances and immunities', () => {
+    const { body } = pokemonPage({ number: 6, name: 'charizard', types: ['fire', 'flying'] })
+    expect(body).toContain('<dt>Weak to</dt><dd>Rock (4×), Water, Electric</dd>')
+    expect(body).toContain('<dt>Resists</dt><dd>Fighting, Steel, Fire, Fairy, Bug (¼×), Grass (¼×)</dd>')
+    expect(body).toContain('<dt>Immune to</dt><dd>Ground</dd>')
   })
 
   test('every Pokémon in the shipped data gets its own page', () => {

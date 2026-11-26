@@ -5,11 +5,13 @@ import { readFile, writeFile, mkdir } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { Plugin, ResolvedConfig } from 'vite'
 import pokemonData from '../src/data/pokemon.json' with { type: 'json' }
+import { defensiveMatchups } from '../src/utils/type-matchups'
 
 export interface PokemonEntry {
   number: number
   name: string
   types: string[]
+  genus?: string
 }
 
 export interface PageMeta {
@@ -56,13 +58,34 @@ export const listPages: PageMeta[] = [
 
 const link = (entry: PokemonEntry) => `<a href="/dex/${entry.name}">${escapeHtml(titleCase(entry.name))}</a>`
 
+const FRACTIONS: Record<number, string> = { 4: '4×', 0.25: '¼×' }
+
+/** "Rock (4×), Water, Electric" for the attacking types in the given multipliers. */
+function matchups(types: string[], multipliers: number[]) {
+  return defensiveMatchups(types)
+    .filter(({ multiplier }) => multipliers.includes(multiplier))
+    .flatMap(({ multiplier, types }) =>
+      types.map((type) => titleCase(type) + (FRACTIONS[multiplier] ? ` (${FRACTIONS[multiplier]})` : '')),
+    )
+    .join(', ')
+}
+
 export function pokemonPage(entry: PokemonEntry, previous?: PokemonEntry, next?: PokemonEntry): PageMeta {
-  const { number, name, types } = entry
+  const { number, name, types, genus } = entry
   const displayName = titleCase(name)
   const typeLabel = types.map(titleCase).join('/')
   const dexNumber = String(number).padStart(4, '0')
   const article = /^[aeiou]/i.test(typeLabel) ? 'an' : 'a'
-  const description = `${displayName} is ${article} ${typeLabel}-type Pokémon, #${number} in the National Pokédex. See its base stats, the moves it learns in each game, its type weaknesses, abilities, evolutions and forms.`
+  const weak = matchups(types, [4, 2])
+  const resists = matchups(types, [0.5, 0.25])
+  const immune = matchups(types, [0])
+  const description = [
+    `${displayName}${genus ? `, the ${genus},` : ''} is ${article} ${typeLabel}-type Pokémon, #${number} in the National Pokédex.`,
+    weak && `Weak to ${weak}.`,
+    'See its stats, moves in each game, abilities and evolutions.',
+  ]
+    .filter(Boolean)
+    .join(' ')
   const neighbours = [previous && `Previous: ${link(previous)}`, next && `Next: ${link(next)}`].filter(Boolean)
   return {
     path: `/dex/${name}`,
@@ -72,6 +95,10 @@ export function pokemonPage(entry: PokemonEntry, previous?: PokemonEntry, next?:
     body: [
       `<h1>${escapeHtml(displayName)} #${dexNumber}</h1>`,
       `<p>${escapeHtml(description)}</p>`,
+      '<h2>Weaknesses</h2>',
+      `<dl><dt>Weak to</dt><dd>${weak || 'None'}</dd><dt>Resists</dt><dd>${resists || 'None'}</dd>` +
+        (immune ? `<dt>Immune to</dt><dd>${immune}</dd>` : '') +
+        '</dl>',
       `<nav>${[...neighbours, '<a href="/">All Pokémon</a>'].join(' · ')}</nav>`,
     ].join(''),
   }

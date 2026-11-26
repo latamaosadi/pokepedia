@@ -1,4 +1,4 @@
-import typeCharts from '@/data/type-chart.json'
+import typeCharts from '../data/type-chart.json'
 
 type Chart = Record<string, Record<string, number>>
 // Keyed by the first generation each chart applies to.
